@@ -1,0 +1,2709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Time Trip Tool</title>
+<style>
+  :root{
+    --bg: #0A0C0F;
+    --panel: #12161C;
+    --panel-2: #181D25;
+    --border: #262E38;
+    --border-bright: #3A4552;
+    --text: #E7EBF0;
+    --text-dim: #8B96A5;
+    --text-faint: #5A6472;
+    --amber: #F2A93B;
+    --amber-dim: #6B5225;
+    --green: #3ECF8E;
+    --green-dim: #1C3D2E;
+    --red: #FF5C5C;
+    --red-dim: #3D1F1F;
+    --mono: 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: radial-gradient(ellipse at top, #10141A 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+  .wrap{ max-width: 880px; margin: 0 auto; }
+
+  /* ---- Header ---- */
+  header{ margin-bottom: 22px; }
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    text-transform: uppercase;
+    display:flex; align-items:center; gap:8px;
+    margin-bottom: 6px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px; height:6px; border-radius:50%;
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+  }
+  h1{
+    font-size: 26px;
+    margin: 0 0 4px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .header-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .help-btn{
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    border: 1px solid var(--border-bright);
+    background: var(--panel-2);
+    color: var(--amber);
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: all .15s;
+  }
+  .help-btn:hover{ border-color: var(--amber); background: rgba(242,169,59,0.1); }
+
+  .help-overlay{
+    display:none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .help-overlay.show{ display:block; }
+  .help-modal{
+    max-width: 620px;
+    margin: 12px auto 40px;
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--border-bright);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .help-modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+  .help-modal-title{ font-size: 15px; font-weight: 700; color: var(--amber); font-family: var(--mono); letter-spacing: 0.04em; }
+  .help-close-btn{
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    border: 1px solid var(--border-bright);
+    background: var(--panel-2); color: var(--text);
+    font-size: 15px; cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .help-close-btn:hover{ border-color: var(--amber); color: var(--amber); }
+  .help-modal-body{ font-size: 13px; line-height: 1.6; color: var(--text-dim); }
+  .help-modal-body h3{
+    color: var(--text); font-size: 11.5px; margin: 18px 0 7px;
+    text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--mono);
+  }
+  .help-modal-body h3:first-child{ margin-top: 0; }
+  .help-modal-body p{ margin: 0 0 10px; }
+  .help-modal-body ul{ margin: 0 0 10px; padding-left: 18px; }
+  .help-modal-body li{ margin-bottom: 6px; }
+  .help-modal-body strong{ color: var(--text); }
+
+  /* ---- Panels ---- */
+  .panel{
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .panel-title{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 0 0 16px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .grid.narrow{ grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 640px){
+    .grid, .grid.narrow{ grid-template-columns: 1fr; }
+  }
+
+  .field label{
+    display:block;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+  }
+  .field .hint{
+    font-size: 10.5px;
+    color: var(--text-faint);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+  input[type=text], input[type=number], input[type=date], input[type=time]{
+    width: 100%;
+    min-height: 44px;
+    background: #0D1015;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 16px;
+    outline: none;
+    transition: border-color .15s;
+    box-sizing: border-box;
+  }
+  input:focus{ border-color: var(--amber); }
+  input[type=text]{ text-transform: uppercase; letter-spacing: 0.05em; }
+  input::placeholder, textarea::placeholder{
+    color: var(--text-faint);
+    opacity: 1; /* Firefox defaults placeholder opacity below 1 — force full opacity of our own dim color instead */
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  /* Quick day/time entry fields (OT trip departure, paste date) size to their
+     content in characters rather than a fixed pixel cap, so they stay usable
+     at any screen width instead of getting squeezed into an unreadable sliver. */
+  input.quick-day{ width: 5.5ch; min-width: 60px; flex: 0 0 auto; }
+  input.quick-hhmm{ width: 7ch; min-width: 76px; flex: 0 0 auto; }
+  input.quick-code{ width: 6ch; min-width: 68px; flex: 0 0 auto; }
+
+  .row-flex{ display:flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .row-flex .field{ flex: 1; min-width: 78px; }
+  .row-flex button{ min-height: 44px; }
+
+  button{
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 7px;
+    border: 1px solid var(--border-bright);
+    background: var(--panel-2);
+    color: var(--text);
+    padding: 9px 14px;
+    min-height: 44px;
+    cursor: pointer;
+    transition: all .15s;
+    box-sizing: border-box;
+  }
+  button:hover{ border-color: var(--amber); color: var(--amber); }
+  button:active{ transform: translateY(1px); }
+  button.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1A1204;
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  button.primary:hover{ filter: brightness(1.08); color:#1A1204; }
+  button.primary:disabled{ opacity: 0.5; cursor: not-allowed; filter:none; }
+  button.ghost{ background: transparent; }
+
+  .override{
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px dashed var(--amber-dim);
+    border-radius: 6px;
+    background: rgba(242,169,59,0.05);
+    display:none;
+    width: 260px;
+    max-width: 85vw;
+  }
+  .override.show{ display:block; }
+  .override .msg{ font-size: 11.5px; color: var(--amber); margin-bottom:6px; line-height:1.4; }
+
+  /* ---- Window readout ---- */
+  .readout{
+    display:grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+  @media (max-width: 640px){ .readout{ grid-template-columns: 1fr; } .readout .divider{ display:none; } }
+  .rocard{
+    background: #0D1015;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .rocard .loc{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .rocard .tline{ margin-bottom: 12px; }
+  .rocard .tline:last-child{ margin-bottom: 0; }
+  .rocard .tlabel{ font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+  .rocard .tval{ font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .rocard .tsub{ font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 1px; }
+  .divider{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color: var(--text-faint); font-family: var(--mono); font-size: 11px; gap:6px;
+  }
+  .divider .arrow{ font-size: 20px; }
+
+  .verdict-band{
+    margin-top: 16px;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display:flex; align-items:center; gap: 12px;
+    border: 1px solid var(--border);
+  }
+  .verdict-band .lamp{
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink:0;
+    box-shadow: 0 0 10px currentColor;
+  }
+  .verdict-band.go{ background: rgba(62,207,142,0.07); border-color: var(--green-dim); }
+  .verdict-band.go .lamp{ background: var(--green); color: var(--green); }
+  .verdict-band.nogo{ background: rgba(255,92,92,0.07); border-color: var(--red-dim); }
+  .verdict-band.nogo .lamp{ background: var(--red); color: var(--red); }
+  .verdict-band .vtext strong{ display:block; font-size: 14px; margin-bottom: 2px; }
+  .verdict-band .vtext span{ font-size: 12px; color: var(--text-dim); }
+  .verdict-band.go .vtext strong{ color: var(--green); }
+  .verdict-band.nogo .vtext strong{ color: var(--red); }
+
+  .placeholder{ color: var(--text-faint); font-size: 13px; text-align:center; padding: 20px 0; }
+
+  /* ---- Results table ---- */
+  table{ width:100%; border-collapse: collapse; font-size: 13px; }
+  thead th{
+    text-align:left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-bright);
+  }
+  tbody td{
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    vertical-align: top;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr.outside{ opacity: 0.55; }
+  tbody tr.copyable{ cursor: pointer; transition: background .1s; }
+  tbody tr.copyable:hover{ background: rgba(242,169,59,0.06); }
+  tbody tr.copyable:active{ background: rgba(242,169,59,0.14); }
+  tbody tr.copyable.just-copied{ background: rgba(62,207,142,0.14); }
+  .badge{
+    display:inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    font-family: var(--mono);
+  }
+  .badge.ok{ background: var(--green-dim); color: var(--green); }
+  .badge.bad{ background: var(--red-dim); color: var(--red); }
+  .cell-time{ line-height: 1.5; }
+  .cell-time .utc{ color: var(--text-faint); font-size: 11px; }
+
+  .status-line{
+    font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    display:flex; align-items:center; gap:8px; padding: 6px 2px;
+  }
+  .spinner{
+    width:12px; height:12px; border-radius:50%;
+    border: 2px solid var(--border-bright); border-top-color: var(--amber);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .error-box{
+    background: rgba(255,92,92,0.06);
+    border: 1px solid var(--red-dim);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    color: var(--red);
+    line-height: 1.5;
+  }
+
+  footer{
+    margin-top: 24px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-top">
+      <div class="eyebrow">Making It Rain... One OT Trip At A Time</div>
+      <button type="button" id="helpBtn" class="help-btn" title="How this tool works" aria-label="Help">?</button>
+    </div>
+    <h1>Open Time Trip Tool</h1>
+  </header>
+
+  <!-- PARAMETERS -->
+  <div class="panel">
+    <div class="panel-title">Trip Parameters</div>
+
+    <div class="field">
+      <label for="otEmailPaste">Quick Fill From OT Email Line <span style="font-weight:400;color:var(--text-faint);">(optional)</span></label>
+      <input type="text" id="otEmailPaste" placeholder="e.g. 5Y734  SCL  MIA  Wed26Aug  0001z  0836z" style="font-size:12px;">
+      <div class="hint" id="otEmailPasteStatus"></div>
+    </div>
+
+    <div class="row-flex" style="margin-top:14px; align-items:flex-start;">
+      <div class="field" style="flex:0 0 auto;">
+        <label for="gwAirport">Departure</label>
+        <input type="text" id="gwAirport" class="quick-code" maxlength="4" value="DTW">
+        <div class="hint" id="gwHint"></div>
+        <div class="override" id="gwOverrideBox">
+          <div class="msg" id="gwOverrideMsg"></div>
+          <input type="text" id="gwOverrideTz" placeholder="e.g. America/New_York">
+        </div>
+      </div>
+      <div class="field" style="flex:0 0 auto;">
+        <label for="otAirport">OT Origin</label>
+        <input type="text" id="otAirport" class="quick-code" maxlength="4" placeholder="e.g. ORD">
+        <div class="hint" id="otHint"></div>
+        <div class="override" id="otOverrideBox">
+          <div class="msg" id="otOverrideMsg"></div>
+          <input type="text" id="otOverrideTz" placeholder="e.g. America/Chicago">
+        </div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:14px;">
+      <label>OT Trip Scheduled Departure — UTC</label>
+      <div class="row-flex">
+        <input type="text" id="otDay" class="quick-day" inputmode="numeric" maxlength="2" placeholder="28" title="Day of month">
+        <input type="text" id="otTimeHHMM" class="quick-hhmm" inputmode="numeric" maxlength="4" placeholder="1429" title="24-hour UTC time">
+      </div>
+      <div class="hint" id="otResolvedHint"></div>
+    </div>
+
+    <div class="field" style="margin-top:14px;">
+      <label>Searching As Of — UTC</label>
+      <div class="row-flex" style="align-items:center;">
+        <span id="asOfDisplay" style="font-family:var(--mono); font-size:14px;"></span>
+        <button type="button" id="nowBtn" title="Update to current UTC time">Now</button>
+      </div>
+      <input type="hidden" id="asDate">
+      <input type="hidden" id="asTime">
+    </div>
+
+    <div class="row-flex" style="margin-top:14px; align-items:flex-end;">
+      <div class="field" style="flex:0 0 auto;">
+        <label for="bufDepart">Depart Buf (hrs)</label>
+        <input type="text" id="bufDepart" class="quick-day" inputmode="decimal" value="3">
+      </div>
+      <div class="field" style="flex:0 0 auto;">
+        <label for="bufArrive">Arrive Buf (hrs)</label>
+        <input type="text" id="bufArrive" class="quick-day" inputmode="decimal" value="3">
+      </div>
+      <button type="button" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <!-- WINDOW READOUT -->
+  <div class="panel">
+    <div class="panel-title">Feasibility Window</div>
+    <div id="windowArea">
+      <div class="placeholder">Enter the OT trip's origin airport and scheduled UTC departure above to compute your window.</div>
+    </div>
+  </div>
+
+  <!-- PASTE FROM GOOGLE FLIGHTS -->
+  <div class="panel">
+    <div class="panel-title">Paste Flights From Google Flights</div>
+    <button type="button" id="gflightsBtn" disabled style="width:100%; margin-bottom:8px;">Enter trip details above to open Google Flights</button>
+    <input type="text" id="gflightsUrlField" readonly style="display:none; width:100%; margin-bottom:6px; font-size:12px; color:var(--text-dim);" title="Tap to select the link, then copy it manually">
+    <div class="hint" id="gflightsCopyStatus" style="min-height:14px; margin-bottom:4px;"></div>
+    <div class="hint" id="gflightsHint" style="margin-bottom:16px;">Opens Business Class results in Google Flights.</div>
+    <div class="grid">
+      <div class="field">
+        <label for="pasteDay">Flight Date — Local, At Origin</label>
+        <input type="text" id="pasteDay" class="quick-day" inputmode="numeric" maxlength="2" placeholder="28" title="Day of month">
+        <div class="hint" id="pasteResolvedHint"></div>
+      </div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label for="pasteBox">Paste Copied Flight Results</label>
+      <textarea id="pasteBox" rows="10" placeholder="Select the flight results on Google Flights, copy, and paste here. Extra text (price trackers, promos, etc.) is fine — it gets ignored." style="width:100%; background:#0D1015; border:1px solid var(--border); color:var(--text); border-radius:6px; padding:10px; font-family:var(--mono); font-size:12.5px; resize:vertical; outline:none;"></textarea>
+    </div>
+    <button type="button" class="primary" id="parseBtn" style="margin-top:12px;">Go</button>
+    <div id="parseStatus"></div>
+    <div id="pasteResultsArea"></div>
+  </div>
+
+  <footer>
+    This is a planning aid — always confirm the actual schedule with the airline. Tap the <strong style="color:var(--amber);">?</strong> at the top for how everything works.
+  </footer>
+
+</div>
+
+<div class="help-overlay" id="helpOverlay">
+  <div class="help-modal">
+    <div class="help-modal-header">
+      <div class="help-modal-title">How This Tool Works</div>
+      <button type="button" class="help-close-btn" id="helpCloseBtn" aria-label="Close">×</button>
+    </div>
+    <div class="help-modal-body">
+      <h3>Overview</h3>
+      <p>Checks whether a commuter flight can realistically get you from your departure airport to an Open Time trip's origin, with your own buffers built in. Times convert automatically between UTC and local using the IANA timezone database (DST-aware) — no manual math.</p>
+
+      <h3>Quick Fill From OT Email Line</h3>
+      <p>Optional. The OT email's trip table lists each operating leg — copy the <strong>first operating leg's row</strong> and paste it here (tab- or space-separated), e.g. <code>5Y734  SCL  MIA  Wed26Aug  0001z  0836z</code>. It pulls the origin airport, day, and UTC departure time and fills the fields below automatically.</p>
+      <p>If that first leg departs from an airport with no commercial service (<code>ZAZ</code>, <code>DNA</code>, and similar cargo-only or military fields are common examples), set <strong>OT Origin</strong> to a nearby airport you can actually fly commercial into instead, and add the extra ground-transport ("limo") time onto <strong>Arrive Buf</strong> so the math still accounts for getting from that airport to the real OT origin.</p>
+
+      <h3>Departure / OT Origin</h3>
+      <p>Your gateway airport and the airport the Open Time trip departs from. Both use a built-in table of about 1,440 airports worldwide for timezone lookup. If an airport isn't recognized, a box appears to enter its IANA timezone manually (e.g. <code>America/Chicago</code>).</p>
+
+      <h3>OT Trip Scheduled Departure — UTC</h3>
+      <p>Day of month, then 24-hour UTC time, straight from the email (e.g. <code>28</code> / <code>1429</code>). The day resolves to the nearest upcoming date — no need to think about month or year.</p>
+
+      <h3>Searching As Of — UTC</h3>
+      <p>Read-only reference clock the whole calculation is based on. Press <strong>Now</strong> to refresh it to the current time — this also refreshes the OT departure default and Flight Date box below, as long as you haven't typed your own values into them.</p>
+
+      <h3>Depart / Arrive Buffers</h3>
+      <p><strong>Depart Buf</strong>: minimum hours after your search time before a commuter flight can realistically depart. <strong>Arrive Buf</strong>: minimum hours between landing at the OT origin and the OT trip's own departure — this is also where you'd add ground-transport time if you're flying into a nearby alternate airport instead of the OT origin itself (see Quick Fill above).</p>
+
+      <h3>Feasibility Window</h3>
+      <p>Once the OT trip details are filled in, this shows the latest local time you can arrive by, and how large your window is.</p>
+
+      <h3>Open Google Flights Button</h3>
+      <p>Opens Google Flights in a new tab, pre-filled with your route, date, one-way, and Business Class. The date used is whatever's in the Flight Date box below; if that's empty, it uses your earliest allowable departure date instead.</p>
+
+      <h3>Flight Date — Local, At Origin</h3>
+      <p>Day of month only. Defaults to today's date if it's currently 6pm local time at your departure airport or earlier, otherwise tomorrow's — auto-refreshed whenever you press Now, unless you've typed your own value.</p>
+
+      <h3>Paste Copied Flight Results</h3>
+      <p>Paste either a <strong>list</strong> of flights or a <strong>single flight's expanded details</strong> from Google Flights — the tool detects which one automatically:</p>
+      <ul>
+        <li><strong>A list</strong> produces a sortable feasibility table (direct flights first, then by journey time, tightest passing options on top). Tap any row to copy that flight's booking-request text to your clipboard.</li>
+        <li><strong>An expanded flight's details</strong> produces a ready-to-send booking request instead, with flight numbers, dates, and times — no feasibility window needed for this one. This works the same whether it's a single nonstop or a multi-leg itinerary with connections; every leg gets chained into the request automatically.</li>
+      </ul>
+      <p>Parsing runs automatically the moment you paste. The <strong>Go</strong> button is a manual fallback for anywhere that auto-paste detection doesn't fire.</p>
+
+      <h3>A Note On Accuracy</h3>
+      <p>This is a planning aid, not a booking system — always confirm the actual commuter flight's schedule directly with the airline before committing to bid on an Open Time trip.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// IATA -> IANA timezone lookup (~1,440 airports worldwide)
+// ---------------------------------------------------------------
+const AIRPORT_TZ = {
+  // -- US Eastern - New England --
+  BOS:"America/New_York", PVD:"America/New_York", PWM:"America/New_York", BGR:"America/New_York", BTV:"America/New_York", MHT:"America/New_York",
+  HTO:"America/New_York", OWD:"America/New_York", BED:"America/New_York",
+  // -- US Eastern - NY/NJ/PA --
+  JFK:"America/New_York", LGA:"America/New_York", EWR:"America/New_York", HPN:"America/New_York", ISP:"America/New_York", SWF:"America/New_York",
+  ALB:"America/New_York", SYR:"America/New_York", ROC:"America/New_York", BUF:"America/New_York", ITH:"America/New_York", ELM:"America/New_York",
+  ART:"America/New_York", PLB:"America/New_York", MSS:"America/New_York", PHL:"America/New_York", ABE:"America/New_York", MDT:"America/New_York",
+  AVP:"America/New_York",
+  // -- US Eastern - DC area --
+  BWI:"America/New_York", IAD:"America/New_York", DCA:"America/New_York",
+  // -- US Eastern - Mid-Atlantic/Southeast --
+  RIC:"America/New_York", ORF:"America/New_York", PHF:"America/New_York", ILM:"America/New_York", FAY:"America/New_York", GSO:"America/New_York",
+  RDU:"America/New_York", CLT:"America/New_York", AVL:"America/New_York", CHS:"America/New_York", CAE:"America/New_York", GSP:"America/New_York",
+  SAV:"America/New_York", ATL:"America/New_York",
+  // -- US Eastern - Florida (peninsula) --
+  JAX:"America/New_York", TLH:"America/New_York", GNV:"America/New_York", MLB:"America/New_York", DAB:"America/New_York", SRQ:"America/New_York",
+  PGD:"America/New_York", EYW:"America/New_York", MCO:"America/New_York", MIA:"America/New_York", FLL:"America/New_York", PBI:"America/New_York",
+  RSW:"America/New_York", TPA:"America/New_York",
+  // -- US Eastern - Kentucky (E) --
+  CVG:"America/New_York", LEX:"America/New_York", SDF:"America/New_York",
+  // -- US Eastern - East Tennessee --
+  TYS:"America/New_York", TRI:"America/New_York", CHA:"America/New_York",
+  // -- US Eastern - West Virginia --
+  HTS:"America/New_York", CRW:"America/New_York", CKB:"America/New_York",
+  // -- US Eastern - Ohio/Great Lakes --
+  PIT:"America/New_York", CLE:"America/New_York", CMH:"America/New_York", DAY:"America/New_York", TOL:"America/New_York", ERI:"America/New_York",
+  CAK:"America/New_York", LCK:"America/New_York", ILN:"America/New_York",
+  // -- US Eastern - Indiana (most) --
+  IND:"America/Indianapolis", FWA:"America/Indianapolis",
+  // -- US Eastern - Michigan (most) --
+  DTW:"America/Detroit", GRR:"America/Detroit", LAN:"America/Detroit", AZO:"America/Detroit", MBS:"America/Detroit", FNT:"America/Detroit",
+  // -- US Central - FL Panhandle --
+  PNS:"America/Chicago", ECP:"America/Chicago", VPS:"America/Chicago",
+  // -- US Central - Alabama --
+  BHM:"America/Chicago", HSV:"America/Chicago", MGM:"America/Chicago", DHN:"America/Chicago",
+  // -- US Central - Mississippi --
+  JAN:"America/Chicago", MEI:"America/Chicago", GPT:"America/Chicago",
+  // -- US Central - Illinois/Wisconsin --
+  ORD:"America/Chicago", MDW:"America/Chicago", RFD:"America/Chicago", PIA:"America/Chicago", SPI:"America/Chicago", BMI:"America/Chicago",
+  MLI:"America/Chicago", MKE:"America/Chicago", GRB:"America/Chicago",
+  // -- US Central - Missouri --
+  STL:"America/Chicago", CGI:"America/Chicago", SGF:"America/Chicago", COU:"America/Chicago", JLN:"America/Chicago",
+  // -- US Central - Minnesota --
+  MSP:"America/Chicago", RST:"America/Chicago", DLH:"America/Chicago",
+  // -- US Central - Dakotas (east) --
+  FSD:"America/Chicago", FAR:"America/Chicago", BIS:"America/Chicago", GFK:"America/Chicago", MOT:"America/Chicago",
+  // -- US Central - Nebraska (east) --
+  OMA:"America/Chicago",
+  // -- US Central - Kansas (most) --
+  ICT:"America/Chicago",
+  // -- US Central - Texas --
+  DFW:"America/Chicago", DAL:"America/Chicago", AUS:"America/Chicago", SAT:"America/Chicago", IAH:"America/Chicago", HOU:"America/Chicago",
+  OKC:"America/Chicago", TUL:"America/Chicago", GGG:"America/Chicago", TYR:"America/Chicago", ACT:"America/Chicago", ABI:"America/Chicago",
+  CLL:"America/Chicago", CRP:"America/Chicago", MFE:"America/Chicago", HRL:"America/Chicago", BRO:"America/Chicago", LRD:"America/Chicago",
+  SJT:"America/Chicago", MAF:"America/Chicago", LBB:"America/Chicago", AMA:"America/Chicago", GRK:"America/Chicago",
+  // -- US Central - Arkansas --
+  LIT:"America/Chicago", TXK:"America/Chicago", FSM:"America/Chicago", XNA:"America/Chicago", LAW:"America/Chicago",
+  // -- US Central - Louisiana --
+  SHV:"America/Chicago", MLU:"America/Chicago", BTR:"America/Chicago", MSY:"America/Chicago", LFT:"America/Chicago",
+  // -- US Central - S.Indiana/Tennessee(W) --
+  EVV:"America/Chicago", SBN:"America/Chicago", BNA:"America/Chicago", MEM:"America/Chicago",
+  // -- US Mountain - Colorado --
+  DEN:"America/Denver", COS:"America/Denver", ASE:"America/Denver", EGE:"America/Denver", GUC:"America/Denver", MTJ:"America/Denver",
+  DRO:"America/Denver", GJT:"America/Denver",
+  // -- US Mountain - Utah --
+  SLC:"America/Denver",
+  // -- US Mountain - Montana --
+  BZN:"America/Denver", BIL:"America/Denver", GTF:"America/Denver", HLN:"America/Denver", MSO:"America/Denver", FCA:"America/Denver",
+  // -- US Mountain - Idaho (east) --
+  IDA:"America/Denver", PIH:"America/Denver", TWF:"America/Denver", SUN:"America/Denver",
+  // -- US Mountain - Wyoming --
+  JAC:"America/Denver", CPR:"America/Denver", CYS:"America/Denver", RKS:"America/Denver", GCC:"America/Denver",
+  // -- US Mountain - New Mexico --
+  ABQ:"America/Denver", SAF:"America/Denver",
+  // -- US Mountain - Arizona (no DST) --
+  PHX:"America/Phoenix", TUS:"America/Phoenix", YUM:"America/Phoenix", PRC:"America/Phoenix", FLG:"America/Phoenix",
+  // -- US Mountain - Idaho (Boise, own zone) --
+  BOI:"America/Boise",
+  // -- US Pacific - California (S/central) --
+  LAX:"America/Los_Angeles", SFO:"America/Los_Angeles", OAK:"America/Los_Angeles", SJC:"America/Los_Angeles", SAN:"America/Los_Angeles", LGB:"America/Los_Angeles",
+  BUR:"America/Los_Angeles", SNA:"America/Los_Angeles", ONT:"America/Los_Angeles", FAT:"America/Los_Angeles", BFL:"America/Los_Angeles", SBA:"America/Los_Angeles",
+  SBP:"America/Los_Angeles", MRY:"America/Los_Angeles", PSP:"America/Los_Angeles",
+  // -- US Pacific - Washington/Oregon/Nevada --
+  SEA:"America/Los_Angeles", PDX:"America/Los_Angeles", SMF:"America/Los_Angeles", RNO:"America/Los_Angeles", LAS:"America/Los_Angeles", GEG:"America/Los_Angeles",
+  PSC:"America/Los_Angeles", PDT:"America/Los_Angeles", ALW:"America/Los_Angeles", YKM:"America/Los_Angeles", BLI:"America/Los_Angeles", MFR:"America/Los_Angeles",
+  RDM:"America/Los_Angeles", EUG:"America/Los_Angeles", OTH:"America/Los_Angeles",
+  // -- US Pacific - Northern CA / misc --
+  ACV:"America/Los_Angeles", STS:"America/Los_Angeles", RDD:"America/Los_Angeles", CIC:"America/Los_Angeles", IYK:"America/Los_Angeles", EKO:"America/Los_Angeles",
+  ELY:"America/Los_Angeles", VCV:"America/Los_Angeles", SBD:"America/Los_Angeles", RIV:"America/Los_Angeles", NFW:"America/Los_Angeles", GYY:"America/Los_Angeles",
+  // -- US Alaska --
+  ANC:"America/Anchorage", FAI:"America/Anchorage", JNU:"America/Anchorage", KTN:"America/Anchorage", BET:"America/Anchorage", OME:"America/Anchorage",
+  OTZ:"America/Anchorage", BRW:"America/Anchorage", DLG:"America/Anchorage", ADQ:"America/Anchorage", CDV:"America/Anchorage", UNK:"America/Anchorage",
+  // -- US Alaska - Sitka subzone --
+  SIT:"America/Sitka",
+  // -- US Alaska - Yakutat subzone --
+  YAK:"America/Yakutat",
+  // -- US Alaska - Adak subzone --
+  ADK:"America/Adak",
+  // -- US Hawaii --
+  HNL:"Pacific/Honolulu", OGG:"Pacific/Honolulu", KOA:"Pacific/Honolulu", LIH:"Pacific/Honolulu", ITO:"Pacific/Honolulu", MKK:"Pacific/Honolulu",
+  LNY:"Pacific/Honolulu",
+  // -- Canada - Newfoundland --
+  YYT:"America/St_Johns", YDF:"America/St_Johns", YQX:"America/St_Johns",
+  // -- Canada - Atlantic --
+  YHZ:"America/Halifax", YSJ:"America/Halifax", YFC:"America/Halifax", YQM:"America/Halifax", YQI:"America/Halifax", CFB:"America/Halifax",
+  YYG:"America/Halifax",
+  // -- Canada - Eastern --
+  YYZ:"America/Toronto", YTZ:"America/Toronto", YOW:"America/Toronto", YUL:"America/Toronto", YQB:"America/Toronto", YHU:"America/Toronto",
+  YXU:"America/Toronto", YKF:"America/Toronto", YQG:"America/Toronto", YTS:"America/Toronto", YSB:"America/Toronto", YQT:"America/Toronto",
+  YAM:"America/Toronto",
+  // -- Canada - Central (Manitoba/most Ontario) --
+  YWG:"America/Winnipeg", YQR:"America/Winnipeg", YXE:"America/Winnipeg",
+  // -- Canada - Mountain --
+  YEG:"America/Edmonton", YYC:"America/Edmonton", YQL:"America/Edmonton", YMM:"America/Edmonton", YXH:"America/Edmonton",
+  // -- Canada - Pacific --
+  YVR:"America/Vancouver", YXX:"America/Vancouver", YYJ:"America/Vancouver", YCD:"America/Vancouver", YXS:"America/Vancouver", YZP:"America/Vancouver",
+  // -- Canada - Far North (Yukon) --
+  YXY:"America/Whitehorse",
+  // -- Canada - Far North (NWT) --
+  YZF:"America/Edmonton",
+  // -- Canada - Nunavut (Iqaluit) --
+  YFB:"America/Iqaluit",
+  // -- Mexico - Central zone (most) --
+  MEX:"America/Mexico_City", NLU:"America/Mexico_City", TLC:"America/Mexico_City", GDL:"America/Mexico_City", MTY:"America/Mexico_City", QRO:"America/Mexico_City",
+  SLP:"America/Mexico_City", AGU:"America/Mexico_City", LEN:"America/Mexico_City", ZCL:"America/Mexico_City", DGO:"America/Mexico_City", CUU:"America/Mexico_City",
+  TRC:"America/Mexico_City", BJX:"America/Mexico_City", PBC:"America/Mexico_City", VER:"America/Mexico_City", MID:"America/Mexico_City", MTT:"America/Mexico_City",
+  CUN:"America/Mexico_City", CZM:"America/Mexico_City", PVR:"America/Mexico_City", ZIH:"America/Mexico_City", ACA:"America/Mexico_City", OAX:"America/Mexico_City",
+  TAP:"America/Mexico_City", VSA:"America/Mexico_City", CEN:"America/Mexico_City", MZT:"America/Mexico_City", CVJ:"America/Mexico_City",
+  // -- Mexico - Pacific zone (Sinaloa/Nayarit/BCS partial) --
+  LTO:"America/Mazatlan", SJD:"America/Mazatlan", CUL:"America/Mazatlan",
+  // -- Mexico - Northwest (Baja California) --
+  TIJ:"America/Tijuana", MXL:"America/Tijuana",
+  // -- Mexico - Northwest (Sonora, no DST) --
+  HMO:"America/Hermosillo", GYM:"America/Hermosillo",
+  // -- Mexico - Chihuahua area --
+  CJS:"America/Ciudad_Juarez",
+  // -- Guatemala --
+  GUA:"America/Guatemala",
+  // -- Belize --
+  BZE:"America/Belize",
+  // -- Honduras --
+  TGU:"America/Tegucigalpa", SAP:"America/Tegucigalpa", RTB:"America/Tegucigalpa",
+  // -- El Salvador --
+  SAL:"America/El_Salvador",
+  // -- Nicaragua --
+  MGA:"America/Managua",
+  // -- Costa Rica --
+  SJO:"America/Costa_Rica", LIR:"America/Costa_Rica",
+  // -- Panama --
+  PTY:"America/Panama", DAV:"America/Panama",
+  // -- Bahamas --
+  NAS:"America/Nassau", FPO:"America/Nassau",
+  // -- Cuba --
+  HAV:"America/Havana", VRA:"America/Havana",
+  // -- Jamaica --
+  KIN:"America/Jamaica", MBJ:"America/Jamaica",
+  // -- Cayman Islands --
+  GCM:"America/Cayman",
+  // -- Haiti --
+  PAP:"America/Port-au-Prince",
+  // -- Dominican Republic --
+  SDQ:"America/Santo_Domingo", PUJ:"America/Santo_Domingo", STI:"America/Santo_Domingo", POP:"America/Santo_Domingo",
+  // -- Puerto Rico --
+  SJU:"America/Puerto_Rico", BQN:"America/Puerto_Rico", PSE:"America/Puerto_Rico",
+  // -- US Virgin Islands --
+  STT:"America/St_Thomas", STX:"America/St_Thomas",
+  // -- Trinidad and Tobago --
+  POS:"America/Port_of_Spain", TAB:"America/Port_of_Spain",
+  // -- Barbados --
+  BGI:"America/Barbados",
+  // -- Aruba --
+  AUA:"America/Aruba",
+  // -- Curacao --
+  CUR:"America/Curacao",
+  // -- Bonaire --
+  BON:"America/Kralendijk",
+  // -- Sint Maarten --
+  SXM:"America/Lower_Princes",
+  // -- St Martin (FR) --
+  SFG:"America/Marigot",
+  // -- Guadeloupe --
+  PTP:"America/Guadeloupe",
+  // -- Martinique --
+  FDF:"America/Martinique",
+  // -- St Lucia --
+  UVF:"America/St_Lucia",
+  // -- Grenada --
+  GND:"America/Grenada",
+  // -- Antigua and Barbuda --
+  ANU:"America/Antigua",
+  // -- St Kitts and Nevis --
+  SKB:"America/St_Kitts",
+  // -- Dominica --
+  DOM:"America/Dominica",
+  // -- Anguilla --
+  AXA:"America/Anguilla",
+  // -- Turks and Caicos --
+  PLS:"America/Grand_Turk",
+  // -- Bermuda --
+  BDA:"Atlantic/Bermuda",
+  // -- Brazil - Sao Paulo zone (SE/S/most NE) --
+  GRU:"America/Sao_Paulo", CGH:"America/Sao_Paulo", VCP:"America/Sao_Paulo", GIG:"America/Sao_Paulo", SDU:"America/Sao_Paulo", BSB:"America/Sao_Paulo",
+  CNF:"America/Sao_Paulo", CWB:"America/Sao_Paulo", POA:"America/Sao_Paulo", FLN:"America/Sao_Paulo", SSA:"America/Sao_Paulo", GYN:"America/Sao_Paulo",
+  VIX:"America/Sao_Paulo", MCZ:"America/Sao_Paulo", JPA:"America/Sao_Paulo", NAT:"America/Sao_Paulo", AJU:"America/Sao_Paulo", UDI:"America/Sao_Paulo",
+  LDB:"America/Sao_Paulo", IGU:"America/Sao_Paulo", JOI:"America/Sao_Paulo", NVT:"America/Sao_Paulo",
+  // -- Brazil - Fortaleza zone (NE coast) --
+  FOR:"America/Fortaleza", SLZ:"America/Fortaleza", THE:"America/Fortaleza",
+  // -- Brazil - Belem zone --
+  BEL:"America/Belem", STM:"America/Belem",
+  // -- Brazil - Manaus zone (Amazonas) --
+  MAO:"America/Manaus",
+  // -- Brazil - Rio Branco zone (Acre) --
+  RBR:"America/Rio_Branco", CZS:"America/Rio_Branco",
+  // -- Brazil - Cuiaba zone --
+  CGB:"America/Cuiaba", CGR:"America/Cuiaba",
+  // -- Brazil - Boa Vista zone (Roraima) --
+  BVB:"America/Boa_Vista",
+  // -- Brazil - Porto Velho zone (Rondonia) --
+  PVH:"America/Porto_Velho",
+  // -- Brazil - Fernando de Noronha --
+  FEN:"America/Noronha",
+  // -- Argentina --
+  EZE:"America/Buenos_Aires", AEP:"America/Buenos_Aires", COR:"America/Buenos_Aires", MDZ:"America/Buenos_Aires", ROS:"America/Buenos_Aires", IGR:"America/Buenos_Aires",
+  BRC:"America/Buenos_Aires", USH:"America/Buenos_Aires", FTE:"America/Buenos_Aires", SLA:"America/Buenos_Aires", TUC:"America/Buenos_Aires", NQN:"America/Buenos_Aires",
+  // -- Chile - mainland --
+  SCL:"America/Santiago", ANF:"America/Santiago", IQQ:"America/Santiago", PUQ:"America/Santiago", ZCO:"America/Santiago", CCP:"America/Santiago",
+  LSC:"America/Santiago",
+  // -- Chile - Easter Island --
+  IPC:"Pacific/Easter",
+  // -- Peru --
+  LIM:"America/Lima", CUZ:"America/Lima", AQP:"America/Lima", TRU:"America/Lima", PIU:"America/Lima", IQT:"America/Lima",
+  // -- Colombia --
+  BOG:"America/Bogota", MDE:"America/Bogota", CLO:"America/Bogota", CTG:"America/Bogota", BAQ:"America/Bogota", BGA:"America/Bogota",
+  PEI:"America/Bogota", SMR:"America/Bogota",
+  // -- Ecuador - mainland --
+  UIO:"America/Guayaquil", GYE:"America/Guayaquil", CUE:"America/Guayaquil",
+  // -- Ecuador - Galapagos --
+  GPS:"Pacific/Galapagos",
+  // -- Venezuela --
+  CCS:"America/Caracas", MAR:"America/Caracas", VLN:"America/Caracas",
+  // -- Bolivia --
+  LPB:"America/La_Paz", VVI:"America/La_Paz", CBB:"America/La_Paz", SRZ:"America/La_Paz",
+  // -- Paraguay --
+  ASU:"America/Asuncion",
+  // -- Uruguay --
+  MVD:"America/Montevideo",
+  // -- Guyana --
+  GEO:"America/Guyana",
+  // -- Suriname --
+  PBM:"America/Paramaribo",
+  // -- French Guiana --
+  CAY:"America/Cayenne",
+  // -- United Kingdom --
+  LHR:"Europe/London", LGW:"Europe/London", STN:"Europe/London", LTN:"Europe/London", LCY:"Europe/London", MAN:"Europe/London",
+  BHX:"Europe/London", EDI:"Europe/London", GLA:"Europe/London", BFS:"Europe/London", NCL:"Europe/London", LPL:"Europe/London",
+  BRS:"Europe/London", EMA:"Europe/London", LBA:"Europe/London", ABZ:"Europe/London", SOU:"Europe/London", EXT:"Europe/London",
+  NWI:"Europe/London", PIK:"Europe/London", INV:"Europe/London", BOH:"Europe/London",
+  // -- Ireland --
+  DUB:"Europe/Dublin", SNN:"Europe/Dublin", ORK:"Europe/Dublin", NOC:"Europe/Dublin", KIR:"Europe/Dublin",
+  // -- Portugal - mainland --
+  LIS:"Europe/Lisbon", OPO:"Europe/Lisbon", FAO:"Europe/Lisbon",
+  // -- Portugal - Azores --
+  PDL:"Atlantic/Azores",
+  // -- Portugal - Madeira --
+  FNC:"Atlantic/Madeira",
+  // -- Spain - mainland --
+  MAD:"Europe/Madrid", BCN:"Europe/Madrid", AGP:"Europe/Madrid", PMI:"Europe/Madrid", VLC:"Europe/Madrid", SVQ:"Europe/Madrid",
+  BIO:"Europe/Madrid", ALC:"Europe/Madrid",
+  // -- Spain - Canary Islands --
+  LPA:"Atlantic/Canary", TFS:"Atlantic/Canary", TFN:"Atlantic/Canary", ACE:"Atlantic/Canary", FUE:"Atlantic/Canary",
+  // -- France --
+  CDG:"Europe/Paris", ORY:"Europe/Paris", NCE:"Europe/Paris", LYS:"Europe/Paris", MRS:"Europe/Paris", TLS:"Europe/Paris",
+  BOD:"Europe/Paris", NTE:"Europe/Paris", LIL:"Europe/Paris", SXB:"Europe/Paris",
+  // -- Belgium --
+  BRU:"Europe/Brussels", CRL:"Europe/Brussels", LGG:"Europe/Brussels",
+  // -- Netherlands --
+  AMS:"Europe/Amsterdam", EIN:"Europe/Amsterdam", RTM:"Europe/Amsterdam",
+  // -- Luxembourg --
+  LUX:"Europe/Luxembourg",
+  // -- Germany --
+  FRA:"Europe/Berlin", MUC:"Europe/Berlin", DUS:"Europe/Berlin", HAM:"Europe/Berlin", BER:"Europe/Berlin", CGN:"Europe/Berlin",
+  LEJ:"Europe/Berlin", STR:"Europe/Berlin", NUE:"Europe/Berlin", HAJ:"Europe/Berlin", DRS:"Europe/Berlin", BRE:"Europe/Berlin",
+  DTM:"Europe/Berlin", FMM:"Europe/Berlin", HHN:"Europe/Berlin", FKB:"Europe/Berlin",
+  // -- Switzerland --
+  ZRH:"Europe/Zurich", GVA:"Europe/Zurich", BSL:"Europe/Zurich", BRN:"Europe/Zurich",
+  // -- Austria --
+  VIE:"Europe/Vienna", SZG:"Europe/Vienna", INN:"Europe/Vienna", GRZ:"Europe/Vienna", LNZ:"Europe/Vienna",
+  // -- Italy --
+  FCO:"Europe/Rome", MXP:"Europe/Rome", LIN:"Europe/Rome", BGY:"Europe/Rome", VCE:"Europe/Rome", NAP:"Europe/Rome",
+  BLQ:"Europe/Rome", TRN:"Europe/Rome", CTA:"Europe/Rome", PMO:"Europe/Rome", CAG:"Europe/Rome", BRI:"Europe/Rome",
+  FLR:"Europe/Rome", PSA:"Europe/Rome", VRN:"Europe/Rome", OLB:"Europe/Rome",
+  // -- Malta --
+  MLA:"Europe/Malta",
+  // -- Denmark --
+  CPH:"Europe/Copenhagen", BLL:"Europe/Copenhagen", AAL:"Europe/Copenhagen",
+  // -- Sweden --
+  ARN:"Europe/Stockholm", GOT:"Europe/Stockholm", MMX:"Europe/Stockholm", BMA:"Europe/Stockholm",
+  // -- Norway --
+  OSL:"Europe/Oslo", BGO:"Europe/Oslo", TRD:"Europe/Oslo", SVG:"Europe/Oslo", TOS:"Europe/Oslo", BOO:"Europe/Oslo",
+  // -- Finland --
+  HEL:"Europe/Helsinki", TMP:"Europe/Helsinki", OUL:"Europe/Helsinki", RVN:"Europe/Helsinki",
+  // -- Iceland --
+  KEF:"Atlantic/Reykjavik", RKV:"Atlantic/Reykjavik",
+  // -- Poland --
+  WAW:"Europe/Warsaw", KRK:"Europe/Warsaw", GDN:"Europe/Warsaw", WRO:"Europe/Warsaw", POZ:"Europe/Warsaw", KTW:"Europe/Warsaw",
+  RZE:"Europe/Warsaw",
+  // -- Czech Republic --
+  PRG:"Europe/Prague", BRQ:"Europe/Prague",
+  // -- Slovakia --
+  BTS:"Europe/Bratislava",
+  // -- Hungary --
+  BUD:"Europe/Budapest",
+  // -- Romania --
+  OTP:"Europe/Bucharest", CLJ:"Europe/Bucharest", TSR:"Europe/Bucharest", IAS:"Europe/Bucharest",
+  // -- Bulgaria --
+  SOF:"Europe/Sofia", VAR:"Europe/Sofia", BOJ:"Europe/Sofia",
+  // -- Greece --
+  ATH:"Europe/Athens", SKG:"Europe/Athens", HER:"Europe/Athens", RHO:"Europe/Athens", CHQ:"Europe/Athens", CFU:"Europe/Athens",
+  JMK:"Europe/Athens", JTR:"Europe/Athens",
+  // -- Croatia --
+  ZAG:"Europe/Zagreb", SPU:"Europe/Zagreb", DBV:"Europe/Zagreb", PUY:"Europe/Zagreb", ZAD:"Europe/Zagreb",
+  // -- Slovenia --
+  LJU:"Europe/Ljubljana",
+  // -- Bosnia and Herzegovina --
+  SJJ:"Europe/Sarajevo",
+  // -- Serbia --
+  BEG:"Europe/Belgrade",
+  // -- Montenegro --
+  TGD:"Europe/Podgorica",
+  // -- North Macedonia --
+  SKP:"Europe/Skopje",
+  // -- Albania --
+  TIA:"Europe/Tirane",
+  // -- Kosovo --
+  PRN:"Europe/Belgrade",
+  // -- Cyprus --
+  LCA:"Asia/Nicosia", ECN:"Asia/Nicosia",
+  // -- Turkey --
+  IST:"Europe/Istanbul", SAW:"Europe/Istanbul", ESB:"Europe/Istanbul", AYT:"Europe/Istanbul", ADB:"Europe/Istanbul", ADA:"Europe/Istanbul",
+  // -- Estonia --
+  TLL:"Europe/Tallinn",
+  // -- Latvia --
+  RIX:"Europe/Riga",
+  // -- Lithuania --
+  VNO:"Europe/Vilnius", KUN:"Europe/Vilnius",
+  // -- Belarus --
+  MSQ:"Europe/Minsk",
+  // -- Ukraine --
+  KBP:"Europe/Kiev", IEV:"Europe/Kiev", LWO:"Europe/Kiev", ODS:"Europe/Kiev",
+  // -- Moldova --
+  KIV:"Europe/Chisinau",
+  // -- Gibraltar --
+  GIB:"Europe/Gibraltar",
+  // -- Russia - Kaliningrad --
+  KGD:"Europe/Kaliningrad",
+  // -- Russia - Moscow zone --
+  SVO:"Europe/Moscow", DME:"Europe/Moscow", VKO:"Europe/Moscow", LED:"Europe/Moscow", KZN:"Europe/Moscow", ROV:"Europe/Moscow",
+  KRR:"Europe/Moscow", AER:"Europe/Moscow",
+  // -- Georgia --
+  TBS:"Asia/Tbilisi",
+  // -- Armenia --
+  EVN:"Asia/Yerevan",
+  // -- Azerbaijan --
+  GYD:"Asia/Baku",
+  // -- Russia - Samara zone --
+  KUF:"Europe/Samara", IJK:"Europe/Samara",
+  // -- Russia - Yekaterinburg zone --
+  SVX:"Asia/Yekaterinburg", PEE:"Asia/Yekaterinburg", CEK:"Asia/Yekaterinburg", TJM:"Asia/Yekaterinburg", UFA:"Asia/Yekaterinburg",
+  // -- Russia - Omsk zone --
+  OMS:"Asia/Omsk",
+  // -- Russia - Novosibirsk zone --
+  OVB:"Asia/Novosibirsk", BAX:"Asia/Novosibirsk", TOF:"Asia/Novosibirsk", KEJ:"Asia/Novosibirsk",
+  // -- Russia - Krasnoyarsk zone --
+  KJA:"Asia/Krasnoyarsk", NSK:"Asia/Krasnoyarsk",
+  // -- Russia - Irkutsk zone --
+  IKT:"Asia/Irkutsk", UUD:"Asia/Irkutsk",
+  // -- Russia - Yakutsk zone --
+  YKS:"Asia/Yakutsk",
+  // -- Russia - Vladivostok zone --
+  VVO:"Asia/Vladivostok", KHV:"Asia/Vladivostok",
+  // -- Russia - Magadan zone --
+  GDX:"Asia/Magadan",
+  // -- Russia - Sakhalin zone --
+  UUS:"Asia/Sakhalin",
+  // -- Russia - Kamchatka zone --
+  PKC:"Asia/Kamchatka",
+  // -- Russia - Anadyr zone --
+  DYR:"Asia/Anadyr",
+  // -- UAE --
+  DXB:"Asia/Dubai", DWC:"Asia/Dubai", AUH:"Asia/Dubai", SHJ:"Asia/Dubai",
+  // -- Qatar --
+  DOH:"Asia/Qatar",
+  // -- Bahrain --
+  BAH:"Asia/Bahrain",
+  // -- Saudi Arabia --
+  RUH:"Asia/Riyadh", JED:"Asia/Riyadh", DMM:"Asia/Riyadh", MED:"Asia/Riyadh", TIF:"Asia/Riyadh", AHB:"Asia/Riyadh",
+  // -- Kuwait --
+  KWI:"Asia/Kuwait",
+  // -- Oman --
+  MCT:"Asia/Muscat", SLL:"Asia/Muscat",
+  // -- Yemen --
+  SAH:"Asia/Aden", ADE:"Asia/Aden",
+  // -- Jordan --
+  AMM:"Asia/Amman", AQJ:"Asia/Amman",
+  // -- Lebanon --
+  BEY:"Asia/Beirut",
+  // -- Syria --
+  DAM:"Asia/Damascus",
+  // -- Iraq --
+  BGW:"Asia/Baghdad", BSR:"Asia/Baghdad", EBL:"Asia/Baghdad",
+  // -- Israel --
+  TLV:"Asia/Jerusalem", ETH:"Asia/Jerusalem", SDV:"Asia/Jerusalem",
+  // -- Iran --
+  IKA:"Asia/Tehran", THR:"Asia/Tehran", MHD:"Asia/Tehran", SYZ:"Asia/Tehran", IFN:"Asia/Tehran",
+  // -- Morocco --
+  CMN:"Africa/Casablanca", RAK:"Africa/Casablanca", RBA:"Africa/Casablanca", FEZ:"Africa/Casablanca", AGA:"Africa/Casablanca", TNG:"Africa/Casablanca",
+  OZZ:"Africa/Casablanca",
+  // -- Algeria --
+  ALG:"Africa/Algiers", ORN:"Africa/Algiers", CZL:"Africa/Algiers",
+  // -- Tunisia --
+  TUN:"Africa/Tunis", DJE:"Africa/Tunis", MIR:"Africa/Tunis",
+  // -- Libya --
+  TIP:"Africa/Tripoli", BEN:"Africa/Tripoli",
+  // -- Egypt --
+  CAI:"Africa/Cairo", HRG:"Africa/Cairo", SSH:"Africa/Cairo", LXR:"Africa/Cairo", ASW:"Africa/Cairo",
+  // -- Sudan --
+  KRT:"Africa/Khartoum",
+  // -- South Sudan --
+  JUB:"Africa/Juba",
+  // -- Ethiopia --
+  ADD:"Africa/Addis_Ababa",
+  // -- Eritrea --
+  ASM:"Africa/Asmera",
+  // -- Djibouti --
+  JIB:"Africa/Djibouti",
+  // -- Somalia --
+  MGQ:"Africa/Mogadishu",
+  // -- Kenya --
+  NBO:"Africa/Nairobi", MBA:"Africa/Nairobi",
+  // -- Uganda --
+  EBB:"Africa/Kampala",
+  // -- Tanzania --
+  DAR:"Africa/Dar_es_Salaam", JRO:"Africa/Dar_es_Salaam", ZNZ:"Africa/Dar_es_Salaam",
+  // -- Rwanda --
+  KGL:"Africa/Kigali",
+  // -- Burundi --
+  BJM:"Africa/Bujumbura",
+  // -- Nigeria --
+  LOS:"Africa/Lagos", ABV:"Africa/Lagos", PHC:"Africa/Lagos", KAN:"Africa/Lagos",
+  // -- Ghana --
+  ACC:"Africa/Accra",
+  // -- Cote d'Ivoire / W.Africa GMT bloc --
+  ABJ:"Africa/Abidjan", DKR:"Africa/Abidjan", BKO:"Africa/Abidjan", OUA:"Africa/Abidjan", CKY:"Africa/Abidjan", FNA:"Africa/Abidjan",
+  ROB:"Africa/Abidjan", BJL:"Africa/Abidjan", OXB:"Africa/Abidjan", NKC:"Africa/Abidjan",
+  // -- Togo --
+  LFW:"Africa/Lome",
+  // -- Benin --
+  COO:"Africa/Porto-Novo",
+  // -- Cameroon --
+  DLA:"Africa/Douala", NSI:"Africa/Douala",
+  // -- Gabon --
+  LBV:"Africa/Libreville",
+  // -- Congo-Brazzaville --
+  BZV:"Africa/Brazzaville",
+  // -- DR Congo - west --
+  FIH:"Africa/Kinshasa",
+  // -- DR Congo - east --
+  FBM:"Africa/Lubumbashi",
+  // -- Central African Republic --
+  BGF:"Africa/Bangui",
+  // -- Chad --
+  NDJ:"Africa/Ndjamena",
+  // -- Niger --
+  NIM:"Africa/Niamey",
+  // -- Equatorial Guinea --
+  SSG:"Africa/Malabo",
+  // -- Sao Tome and Principe --
+  TMS:"Africa/Sao_Tome",
+  // -- Angola --
+  LAD:"Africa/Luanda",
+  // -- Namibia --
+  WDH:"Africa/Windhoek",
+  // -- Botswana --
+  GBE:"Africa/Gaborone",
+  // -- Zimbabwe --
+  HRE:"Africa/Harare",
+  // -- Zambia --
+  LUN:"Africa/Lusaka",
+  // -- Malawi --
+  BLZ:"Africa/Blantyre",
+  // -- Mozambique --
+  MPM:"Africa/Maputo",
+  // -- South Africa --
+  JNB:"Africa/Johannesburg", CPT:"Africa/Johannesburg", DUR:"Africa/Johannesburg",
+  // -- Lesotho --
+  MSU:"Africa/Maseru",
+  // -- Eswatini --
+  SHO:"Africa/Mbabane",
+  // -- Madagascar --
+  TNR:"Indian/Antananarivo",
+  // -- Mauritius --
+  MRU:"Indian/Mauritius",
+  // -- Reunion --
+  RUN:"Indian/Reunion",
+  // -- Comoros --
+  YVA:"Indian/Comoro",
+  // -- Seychelles --
+  SEZ:"Indian/Mahe",
+  // -- India --
+  DEL:"Asia/Calcutta", BOM:"Asia/Calcutta", MAA:"Asia/Calcutta", BLR:"Asia/Calcutta", HYD:"Asia/Calcutta", CCU:"Asia/Calcutta",
+  AMD:"Asia/Calcutta", GOI:"Asia/Calcutta", COK:"Asia/Calcutta", PNQ:"Asia/Calcutta", JAI:"Asia/Calcutta", LKO:"Asia/Calcutta",
+  IXC:"Asia/Calcutta", PAT:"Asia/Calcutta", GAU:"Asia/Calcutta", TRV:"Asia/Calcutta", IXE:"Asia/Calcutta", VNS:"Asia/Calcutta",
+  IDR:"Asia/Calcutta", NAG:"Asia/Calcutta", RPR:"Asia/Calcutta", BHO:"Asia/Calcutta",
+  // -- Pakistan --
+  KHI:"Asia/Karachi", LHE:"Asia/Karachi", ISB:"Asia/Karachi", PEW:"Asia/Karachi",
+  // -- Afghanistan --
+  KBL:"Asia/Kabul",
+  // -- Bangladesh --
+  DAC:"Asia/Dhaka", CGP:"Asia/Dhaka",
+  // -- Sri Lanka --
+  CMB:"Asia/Colombo",
+  // -- Nepal --
+  KTM:"Asia/Katmandu",
+  // -- Bhutan --
+  PBH:"Asia/Thimphu",
+  // -- Myanmar --
+  RGN:"Asia/Rangoon", MDL:"Asia/Rangoon",
+  // -- Maldives --
+  MLE:"Indian/Maldives",
+  // -- Thailand --
+  BKK:"Asia/Bangkok", DMK:"Asia/Bangkok", HKT:"Asia/Bangkok", CNX:"Asia/Bangkok",
+  // -- Vietnam --
+  SGN:"Asia/Saigon", HAN:"Asia/Saigon", DAD:"Asia/Saigon",
+  // -- Cambodia --
+  PNH:"Asia/Phnom_Penh",
+  // -- Laos --
+  VTE:"Asia/Vientiane",
+  // -- Malaysia - Peninsular --
+  KUL:"Asia/Kuala_Lumpur", PEN:"Asia/Kuala_Lumpur", JHB:"Asia/Kuala_Lumpur",
+  // -- Malaysia - East (Borneo) --
+  KCH:"Asia/Kuching", BKI:"Asia/Kuching",
+  // -- Singapore --
+  SIN:"Asia/Singapore",
+  // -- Indonesia - Western (WIB) --
+  CGK:"Asia/Jakarta", HLP:"Asia/Jakarta", KNO:"Asia/Jakarta", PLM:"Asia/Jakarta", PKU:"Asia/Jakarta", BTH:"Asia/Jakarta",
+  // -- Indonesia - Central (WITA) --
+  DPS:"Asia/Makassar", UPG:"Asia/Makassar", BPN:"Asia/Makassar", LOP:"Asia/Makassar",
+  // -- Indonesia - Eastern (WIT) --
+  DJJ:"Asia/Jayapura",
+  // -- Philippines --
+  MNL:"Asia/Manila", CEB:"Asia/Manila", DVO:"Asia/Manila",
+  // -- Brunei --
+  BWN:"Asia/Brunei",
+  // -- Timor-Leste --
+  DIL:"Asia/Dili",
+  // -- China --
+  PVG:"Asia/Shanghai", PEK:"Asia/Shanghai", PKX:"Asia/Shanghai", CAN:"Asia/Shanghai", SZX:"Asia/Shanghai", CTU:"Asia/Shanghai",
+  XIY:"Asia/Shanghai", CGO:"Asia/Shanghai", TAO:"Asia/Shanghai", NKG:"Asia/Shanghai", WUH:"Asia/Shanghai", HGH:"Asia/Shanghai",
+  XMN:"Asia/Shanghai", TSN:"Asia/Shanghai", KMG:"Asia/Shanghai", CSX:"Asia/Shanghai", SHE:"Asia/Shanghai", HRB:"Asia/Shanghai",
+  URC:"Asia/Shanghai",
+  // -- Hong Kong --
+  HKG:"Asia/Hong_Kong",
+  // -- Macau --
+  MFM:"Asia/Macau",
+  // -- Taiwan --
+  TPE:"Asia/Taipei", TSA:"Asia/Taipei", KHH:"Asia/Taipei", RMQ:"Asia/Taipei",
+  // -- Japan --
+  NRT:"Asia/Tokyo", HND:"Asia/Tokyo", KIX:"Asia/Tokyo", ITM:"Asia/Tokyo", NGO:"Asia/Tokyo", CTS:"Asia/Tokyo",
+  FUK:"Asia/Tokyo", OKA:"Asia/Tokyo",
+  // -- South Korea --
+  ICN:"Asia/Seoul", GMP:"Asia/Seoul", PUS:"Asia/Seoul", CJU:"Asia/Seoul",
+  // -- North Korea --
+  FNJ:"Asia/Pyongyang",
+  // -- Mongolia --
+  ULN:"Asia/Ulaanbaatar",
+  // -- Kazakhstan - Almaty zone --
+  ALA:"Asia/Almaty", NQZ:"Asia/Almaty", CIT:"Asia/Almaty",
+  // -- Kazakhstan - Aqtobe/west zone --
+  AKX:"Asia/Aqtobe", GUW:"Asia/Aqtobe", URA:"Asia/Aqtobe",
+  // -- Uzbekistan --
+  TAS:"Asia/Tashkent", SKD:"Asia/Tashkent",
+  // -- Turkmenistan --
+  ASB:"Asia/Ashgabat",
+  // -- Tajikistan --
+  DYU:"Asia/Dushanbe",
+  // -- Kyrgyzstan --
+  FRU:"Asia/Bishkek",
+  // -- Australia - Eastern (NSW/VIC/ACT) --
+  SYD:"Australia/Sydney", MEL:"Australia/Sydney", CBR:"Australia/Sydney", LST:"Australia/Sydney", AVV:"Australia/Sydney",
+  // -- Australia - Tasmania --
+  HBA:"Australia/Hobart",
+  // -- Australia - Queensland (no DST) --
+  BNE:"Australia/Brisbane", CNS:"Australia/Brisbane", OOL:"Australia/Brisbane", TSV:"Australia/Brisbane", MCY:"Australia/Brisbane",
+  // -- Australia - South Australia --
+  ADL:"Australia/Adelaide",
+  // -- Australia - Northern Territory --
+  DRW:"Australia/Darwin",
+  // -- Australia - Western Australia --
+  PER:"Australia/Perth",
+  // -- Australia - Broken Hill (NSW outback) --
+  BHQ:"Australia/Broken_Hill",
+  // -- Australia - Lord Howe Island --
+  LDH:"Australia/Lord_Howe",
+  // -- New Zealand --
+  AKL:"Pacific/Auckland", WLG:"Pacific/Auckland", CHC:"Pacific/Auckland", ZQN:"Pacific/Auckland", DUD:"Pacific/Auckland",
+  // -- New Zealand - Chatham Islands --
+  CHT:"Pacific/Chatham",
+  // -- Fiji --
+  NAN:"Pacific/Fiji", SUV:"Pacific/Fiji",
+  // -- Papua New Guinea --
+  POM:"Pacific/Port_Moresby",
+  // -- Solomon Islands --
+  HIR:"Pacific/Guadalcanal",
+  // -- Vanuatu --
+  VLI:"Pacific/Efate",
+  // -- New Caledonia --
+  NOU:"Pacific/Noumea",
+  // -- Samoa --
+  APW:"Pacific/Apia",
+  // -- American Samoa --
+  PPG:"Pacific/Pago_Pago",
+  // -- Tonga --
+  TBU:"Pacific/Tongatapu",
+  // -- Tuvalu --
+  FUN:"Pacific/Funafuti",
+  // -- Kiribati - Gilbert Islands --
+  TRW:"Pacific/Tarawa",
+  // -- Kiribati - Line Islands --
+  CXI:"Pacific/Kiritimati",
+  // -- Nauru --
+  INU:"Pacific/Nauru",
+  // -- Palau --
+  ROR:"Pacific/Palau",
+  // -- Marshall Islands --
+  MAJ:"Pacific/Majuro", KWA:"Pacific/Majuro",
+  // -- Micronesia - Chuuk --
+  TKK:"Pacific/Truk",
+  // -- Micronesia - Pohnpei --
+  PNI:"Pacific/Ponape",
+  // -- Micronesia - Kosrae --
+  KSA:"Pacific/Kosrae",
+  // -- Guam --
+  GUM:"Pacific/Guam",
+  // -- Northern Mariana Islands --
+  SPN:"Pacific/Saipan",
+  // -- French Polynesia --
+  PPT:"Pacific/Tahiti",
+  // -- Cook Islands --
+  RAR:"Pacific/Rarotonga",
+  // -- Niue --
+  IUE:"Pacific/Niue",
+  // -- Wallis and Futuna --
+  WLS:"Pacific/Wallis",
+  // -- Norfolk Island --
+  NLK:"Pacific/Norfolk",
+  // -- Greenland --
+  GOH:"America/Godthab", NUK:"America/Godthab",
+  // -- US Eastern - additional NE/Mid-Atl --
+  ACK:"America/New_York", MVY:"America/New_York", LEB:"America/New_York", RUT:"America/New_York", EWB:"America/New_York", PVC:"America/New_York",
+  ORH:"America/New_York", GON:"America/New_York", HVN:"America/New_York", ACY:"America/New_York", TTN:"America/New_York", LNS:"America/New_York",
+  RDG:"America/New_York", UNV:"America/New_York", SCE:"America/New_York", IPT:"America/New_York", WBW:"America/New_York",
+  // -- US Eastern - additional Southeast --
+  OAJ:"America/New_York", ISO:"America/New_York", EWN:"America/New_York", PGV:"America/New_York", RWI:"America/New_York", HKY:"America/New_York",
+  EXX:"America/New_York", AGS:"America/New_York", VLD:"America/New_York", MGR:"America/New_York", VDI:"America/New_York", PIE:"America/New_York",
+  SFB:"America/New_York", LEE:"America/New_York", APF:"America/New_York",
+  // -- US Eastern - additional Michigan/Ohio --
+  YIP:"America/New_York", PTK:"America/New_York", MKG:"America/New_York", TVC:"America/New_York", ANJ:"America/New_York", ESC:"America/New_York",
+  IWD:"America/New_York", CIU:"America/New_York",
+  // -- US Central - additional TX/OK/LA --
+  SPS:"America/Chicago", DRT:"America/Chicago", VCT:"America/Chicago", PSX:"America/Chicago", ELD:"America/Chicago", HOT:"America/Chicago",
+  // -- US Central - additional MW --
+  TOP:"America/Chicago", MHK:"America/Chicago", GCK:"America/Chicago", HYS:"America/Chicago", SLN:"America/Chicago", ATY:"America/Chicago",
+  BRD:"America/Chicago", INL:"America/Chicago", HIB:"America/Chicago",
+  // -- US Mountain - additional --
+  PUB:"America/Denver", ALS:"America/Denver", FMN:"America/Denver", LAR:"America/Denver",
+  // -- US Pacific - additional --
+  CEC:"America/Los_Angeles", MOD:"America/Los_Angeles", VIS:"America/Los_Angeles", TVL:"America/Los_Angeles", SUU:"America/Los_Angeles", NUQ:"America/Los_Angeles",
+  HWD:"America/Los_Angeles", OAR:"America/Los_Angeles",
+  // -- Canada - additional Eastern --
+  YGK:"America/Toronto", YOO:"America/Toronto", YSU:"America/Toronto", YQA:"America/Toronto", YVO:"America/Toronto",
+  // -- Canada - additional Atlantic/Maritimes --
+  YZX:"America/Halifax", YQY:"America/Halifax", YYR:"America/Halifax",
+  // -- Canada - additional Mountain/Pacific --
+  YLL:"America/Edmonton", YPY:"America/Edmonton",
+  // -- Canada - additional Pacific BC --
+  YQQ:"America/Vancouver", YPW:"America/Vancouver", YYF:"America/Vancouver", YXT:"America/Vancouver",
+  // -- UK - additional regional --
+  CWL:"Europe/London", HUY:"Europe/London", IOM:"Europe/London", DSA:"Europe/London",
+  // -- Germany - additional regional --
+  SCN:"Europe/Berlin", PAD:"Europe/Berlin", NRN:"Europe/Berlin", FDH:"Europe/Berlin", FMO:"Europe/Berlin",
+  // -- France - additional regional --
+  BIA:"Europe/Paris", AJA:"Europe/Paris", CFR:"Europe/Paris", BES:"Europe/Paris", RNS:"Europe/Paris", CLY:"Europe/Paris",
+  PGF:"Europe/Paris", EGC:"Europe/Paris",
+  // -- Italy - additional regional --
+  TRS:"Europe/Rome", GOA:"Europe/Rome", AOI:"Europe/Rome", TSF:"Europe/Rome", PSR:"Europe/Rome", BDS:"Europe/Rome",
+  SUF:"Europe/Rome", REG:"Europe/Rome", AHO:"Europe/Rome",
+  // -- Spain - additional regional --
+  SDR:"Europe/Madrid", OVD:"Europe/Madrid", SCQ:"Europe/Madrid", VGO:"Europe/Madrid", XRY:"Europe/Madrid", GRX:"Europe/Madrid",
+  RJL:"Europe/Madrid",
+  // -- Scandinavia - additional --
+  VBY:"Europe/Stockholm", LLA:"Europe/Stockholm", UME:"Europe/Stockholm", OSD:"Europe/Stockholm",
+  // -- Norway - additional --
+  KRS:"Europe/Oslo", AES:"Europe/Oslo", MOL:"Europe/Oslo", ALF:"Europe/Oslo",
+  // -- Poland/Baltics - additional --
+  SZZ:"Europe/Warsaw", LUZ:"Europe/Warsaw", BZG:"Europe/Warsaw",
+  // -- Greece - additional islands --
+  KGS:"Europe/Athens", SMI:"Europe/Athens", ZTH:"Europe/Athens", KVA:"Europe/Athens",
+  // -- China - additional regional --
+  DLC:"Asia/Shanghai", TYN:"Asia/Shanghai", TNA:"Asia/Shanghai", HFE:"Asia/Shanghai", NNG:"Asia/Shanghai", KWL:"Asia/Shanghai",
+  SYX:"Asia/Shanghai", HAK:"Asia/Shanghai", FOC:"Asia/Shanghai", NGB:"Asia/Shanghai", WNZ:"Asia/Shanghai", WUX:"Asia/Shanghai",
+  YNT:"Asia/Shanghai", CGQ:"Asia/Shanghai", DYG:"Asia/Shanghai", LHW:"Asia/Shanghai", XNN:"Asia/Shanghai", INC:"Asia/Shanghai",
+  HET:"Asia/Shanghai", NAY:"Asia/Shanghai", TAY:"Asia/Shanghai", LYA:"Asia/Shanghai",
+  // -- India - additional regional --
+  IXJ:"Asia/Calcutta", IXL:"Asia/Calcutta", SXR:"Asia/Calcutta", ATQ:"Asia/Calcutta", IXA:"Asia/Calcutta", IXB:"Asia/Calcutta",
+  GAY:"Asia/Calcutta", BBI:"Asia/Calcutta", VTZ:"Asia/Calcutta", TIR:"Asia/Calcutta", IXM:"Asia/Calcutta", IXR:"Asia/Calcutta",
+  UDR:"Asia/Calcutta", JDH:"Asia/Calcutta", BHU:"Asia/Calcutta", RAJ:"Asia/Calcutta", STV:"Asia/Calcutta", IXZ:"Asia/Calcutta",
+  // -- Japan - additional regional --
+  KOJ:"Asia/Tokyo", KMJ:"Asia/Tokyo", OIT:"Asia/Tokyo", MYJ:"Asia/Tokyo", TOY:"Asia/Tokyo", KMQ:"Asia/Tokyo",
+  AXT:"Asia/Tokyo", AOJ:"Asia/Tokyo", SDJ:"Asia/Tokyo", HIJ:"Asia/Tokyo", TAK:"Asia/Tokyo", MYE:"Asia/Tokyo",
+  ISG:"Asia/Tokyo",
+  // -- South Korea - additional --
+  TAE:"Asia/Seoul", KWJ:"Asia/Seoul", USN:"Asia/Seoul", RSU:"Asia/Seoul",
+  // -- Southeast Asia - additional --
+  UTH:"Asia/Bangkok", UBP:"Asia/Bangkok", KKC:"Asia/Bangkok", CEI:"Asia/Bangkok", HDY:"Asia/Bangkok",
+  // -- Vietnam - additional --
+  CXR:"Asia/Saigon", HPH:"Asia/Saigon", VCA:"Asia/Saigon",
+  // -- Philippines - additional --
+  ILO:"Asia/Manila", BCD:"Asia/Manila", TAG:"Asia/Manila", PPS:"Asia/Manila", ZAM:"Asia/Manila",
+  // -- Indonesia - additional WIB --
+  SUB:"Asia/Jakarta", JOG:"Asia/Jakarta", SOC:"Asia/Jakarta", BDO:"Asia/Jakarta", PDG:"Asia/Jakarta", BTJ:"Asia/Jakarta",
+  // -- Indonesia - additional WITA --
+  MDC:"Asia/Makassar", KDI:"Asia/Makassar", PLW:"Asia/Makassar",
+  // -- Pakistan - additional --
+  MUX:"Asia/Karachi", SKT:"Asia/Karachi", UET:"Asia/Karachi",
+  // -- South Africa - additional regional --
+  PLZ:"Africa/Johannesburg", ELS:"Africa/Johannesburg", BFN:"Africa/Johannesburg", GRJ:"Africa/Johannesburg",
+  // -- Egypt - additional --
+  ATZ:"Africa/Cairo", AAC:"Africa/Cairo", HBE:"Africa/Cairo",
+  // -- Nigeria - additional --
+  ENU:"Africa/Lagos", CBQ:"Africa/Lagos", ILR:"Africa/Lagos",
+  // -- Morocco - additional --
+  NDR:"Africa/Casablanca", TTU:"Africa/Casablanca",
+  // -- East Africa - additional --
+  KIS:"Africa/Nairobi", EDL:"Africa/Nairobi",
+  // -- West Africa GMT bloc - additional --
+  TOD:"Africa/Abidjan", BYK:"Africa/Abidjan",
+  // -- Brazil - additional Sao Paulo zone --
+  PMW:"America/Sao_Paulo", MAB:"America/Sao_Paulo", BPS:"America/Sao_Paulo", IOS:"America/Sao_Paulo", PET:"America/Sao_Paulo", XAP:"America/Sao_Paulo",
+  // -- Argentina - additional --
+  CRD:"America/Buenos_Aires", RGA:"America/Buenos_Aires", RES:"America/Buenos_Aires", CNQ:"America/Buenos_Aires",
+  // -- Colombia - additional --
+  EOH:"America/Bogota", ADZ:"America/Bogota", AXM:"America/Bogota", PSO:"America/Bogota",
+  // -- Peru - additional --
+  TCQ:"America/Lima", PCL:"America/Lima", TPP:"America/Lima",
+  // -- Faroe Islands --
+  FAE:"Atlantic/Faeroe",
+  // -- Svalbard --
+  LYR:"Arctic/Longyearbyen",
+  // -- Andorra region (uses Madrid tz via Spain access) --
+  GRO:"Europe/Madrid",
+  // -- Middle East - additional --
+  GIZ:"Asia/Riyadh", ELQ:"Asia/Riyadh", ABT:"Asia/Riyadh", HAS:"Asia/Riyadh",
+  // -- Middle East - Iran additional --
+  AWZ:"Asia/Tehran", KIH:"Asia/Tehran", BND:"Asia/Tehran",
+  // -- Middle East - Iraq/Jordan additional --
+  ADJ:"Asia/Amman",
+  // -- US - additional cargo/GA relevant fields --
+  SUS:"America/Chicago",
+  // -- Central Asia - additional --
+  PLX:"Asia/Almaty", UKK:"Asia/Almaty",
+  // -- Oceania - additional PNG/Pacific --
+  LAE:"Pacific/Port_Moresby", HKN:"Pacific/Port_Moresby",
+  // -- Caribbean - additional --
+  LRM:"America/Santo_Domingo", AZS:"America/Santo_Domingo",
+  // -- Caribbean - additional Cuba --
+  SNU:"America/Havana", HOG:"America/Havana", CFG:"America/Havana",
+  // -- Central America - additional --
+  FRS:"America/Guatemala",
+  // -- Central America - additional Honduras --
+  UII:"America/Tegucigalpa",
+  // -- US Eastern - more GA/cargo fields --
+  OQU:"America/New_York", HFD:"America/New_York", BLM:"America/New_York", SMQ:"America/New_York", FRG:"America/New_York", JYO:"America/New_York",
+  MRB:"America/New_York", CXY:"America/New_York", BKW:"America/New_York", EKN:"America/New_York",
+  // -- US Eastern - more FL/GA/Carolinas --
+  CSG:"America/New_York", ABY:"America/New_York", BQK:"America/New_York", MYR:"America/New_York", FLO:"America/New_York", CRE:"America/New_York",
+  // -- US Central - more fields --
+  DEC:"America/Chicago", MCW:"America/Chicago", ALO:"America/Chicago", EAU:"America/Chicago", LSE:"America/Chicago", CWA:"America/Chicago",
+  // -- US Central - more Texas/Gulf --
+  PSN:"America/Chicago", BPT:"America/Chicago", LFK:"America/Chicago",
+  // -- US Mountain - more fields --
+  DVT:"America/Denver", SDL:"America/Denver", CHD:"America/Denver", RIL:"America/Denver", HDN:"America/Denver", VEL:"America/Denver",
+  // -- US Pacific - more fields --
+  SCK:"America/Los_Angeles", MER:"America/Los_Angeles", PAO:"America/Los_Angeles", SQL:"America/Los_Angeles", LVK:"America/Los_Angeles", APC:"America/Los_Angeles",
+  // -- US Alaska - more fields --
+  SCC:"America/Anchorage", PSG:"America/Anchorage", WRG:"America/Anchorage", HNS:"America/Anchorage", SGY:"America/Anchorage", GAL:"America/Anchorage",
+  MCG:"America/Anchorage",
+  // -- Canada - more Ontario/Quebec --
+  YQK:"America/Toronto", YSN:"America/Toronto", YXR:"America/Toronto", YZR:"America/Toronto", YHM:"America/Toronto",
+  // -- Canada - more Atlantic --
+  YCH:"America/Halifax",
+  // -- Canada - more Prairies/North --
+  YBR:"America/Winnipeg", YPG:"America/Winnipeg", YQD:"America/Winnipeg",
+  // -- Canada - more territories --
+  YHY:"America/Edmonton", YCO:"America/Edmonton",
+  // -- UK - more regional --
+  MME:"Europe/London", NQY:"Europe/London", BEB:"Europe/London", ILY:"Europe/London", WIC:"Europe/London", KOI:"Europe/London",
+  SYY:"Europe/London", LSI:"Europe/London",
+  // -- Germany - more regional --
+  ERF:"Europe/Berlin", HDF:"Europe/Berlin",
+  // -- Switzerland/Austria - more --
+  ACH:"Europe/Zurich", SIR:"Europe/Zurich",
+  // -- Nordics - more --
+  KRN:"Europe/Stockholm", LYC:"Europe/Stockholm",
+  // -- Nordics Norway - more --
+  EVE:"Europe/Oslo", HAU:"Europe/Oslo", HFT:"Europe/Oslo",
+  // -- Nordics Finland - more --
+  JOE:"Europe/Helsinki", KAJ:"Europe/Helsinki", KEM:"Europe/Helsinki",
+  // -- Eastern Europe - more --
+  IEG:"Europe/Warsaw", OSZ:"Europe/Warsaw",
+  // -- Portugal - additional mainland --
+  BGZ:"Europe/Lisbon",
+  // -- Balkans - more --
+  INI:"Europe/Belgrade", NIS:"Europe/Belgrade",
+  // -- China - more regional --
+  CKG:"Asia/Shanghai", SJW:"Asia/Shanghai", JJN:"Asia/Shanghai", LJG:"Asia/Shanghai", DIG:"Asia/Shanghai", ZHA:"Asia/Shanghai",
+  MIG:"Asia/Shanghai", BAV:"Asia/Shanghai", KHN:"Asia/Shanghai", JHG:"Asia/Shanghai", LXA:"Asia/Shanghai", NTG:"Asia/Shanghai",
+  YCU:"Asia/Shanghai", HYN:"Asia/Shanghai",
+  // -- India - more regional --
+  IXG:"Asia/Calcutta", BHJ:"Asia/Calcutta", DED:"Asia/Calcutta", KNU:"Asia/Calcutta", PNY:"Asia/Calcutta", IXW:"Asia/Calcutta",
+  ISK:"Asia/Calcutta", HBX:"Asia/Calcutta",
+  // -- SE Asia - more Thailand/Vietnam --
+  URT:"Asia/Bangkok", PHS:"Asia/Bangkok", NST:"Asia/Bangkok",
+  // -- SE Asia - more Vietnam --
+  UIH:"Asia/Saigon", VDH:"Asia/Saigon", DLI:"Asia/Saigon",
+  // -- SE Asia - more Indonesia WIB --
+  TKG:"Asia/Jakarta", PKN:"Asia/Jakarta", PNK:"Asia/Jakarta",
+  // -- SE Asia - more Philippines --
+  MPH:"Asia/Manila", KLO:"Asia/Manila", LAO:"Asia/Manila", GES:"Asia/Manila",
+  // -- Japan - more regional --
+  HKD:"Asia/Tokyo", AKJ:"Asia/Tokyo", WKJ:"Asia/Tokyo", ONJ:"Asia/Tokyo",
+  // -- Central Asia - more --
+  NCU:"Asia/Tashkent", BHK:"Asia/Tashkent",
+  // -- Middle East - more Turkey --
+  TZX:"Europe/Istanbul", GZT:"Europe/Istanbul", KYA:"Europe/Istanbul", MLX:"Europe/Istanbul",
+  // -- Middle East - more UAE/Oman --
+  RKT:"Asia/Dubai", FJR:"Asia/Dubai",
+  // -- North Africa - more --
+  ABS:"Africa/Cairo",
+  // -- West Africa - more --
+  QOW:"Africa/Lagos", MIU:"Africa/Lagos",
+  // -- East Africa - more --
+  MWZ:"Africa/Dar_es_Salaam", ARK:"Africa/Dar_es_Salaam",
+  // -- Southern Africa - more --
+  MQP:"Africa/Johannesburg", UTN:"Africa/Johannesburg",
+  // -- Central Africa - more --
+  MJM:"Africa/Kinshasa",
+  // -- Brazil - more Sao Paulo zone --
+  CXJ:"America/Sao_Paulo", CAC:"America/Sao_Paulo", CPV:"America/Sao_Paulo",
+  // -- Chile - more --
+  PMC:"America/Santiago", BBA:"America/Santiago",
+  // -- Colombia - more --
+  IBE:"America/Bogota", MZL:"America/Bogota", NVA:"America/Bogota",
+  // -- Venezuela - more --
+  PZO:"America/Caracas", BLA:"America/Caracas",
+  // -- Australia - more regional East --
+  NTL:"Australia/Sydney", WGA:"Australia/Sydney", ABX:"Australia/Sydney",
+  // -- Australia - more regional QLD --
+  ROK:"Australia/Brisbane", MKY:"Australia/Brisbane",
+  // -- Australia - more regional WA --
+  KTA:"Australia/Perth", GET:"Australia/Perth",
+  // -- New Zealand - more regional --
+  NPE:"Pacific/Auckland", NSN:"Pacific/Auckland", ROT:"Pacific/Auckland",
+  // -- US - final batch NE/SE --
+  BGM:"America/New_York", FOK:"America/New_York", MSV:"America/New_York", POU:"America/New_York",
+  // -- US - final batch Midwest --
+  DBQ:"America/Chicago", ATW:"America/Chicago", OSH:"America/Chicago",
+  // -- US - final batch West --
+  COD:"America/Denver", WYS:"America/Denver",
+  // -- Canada - final batch --
+  YSP:"America/Toronto", YEL:"America/Toronto", YWA:"America/Toronto",
+  // -- Mexico - final batch --
+  TAM:"America/Mexico_City", CPE:"America/Mexico_City", CME:"America/Mexico_City", MXT:"America/Mexico_City",
+  // -- Europe - final batch Germany/Austria --
+  GWT:"Europe/Berlin", WVN:"Europe/Berlin",
+  // -- Europe - final batch Italy/Spain --
+  PMF:"Europe/Rome", FRL:"Europe/Rome",
+  // -- Europe - final batch France --
+  MPL:"Europe/Paris", PUF:"Europe/Paris", LRH:"Europe/Paris",
+  // -- China - final batch --
+  ZUH:"Asia/Shanghai", YIH:"Asia/Shanghai", LZH:"Asia/Shanghai", ACX:"Asia/Shanghai", BFJ:"Asia/Shanghai",
+  // -- India - final batch --
+  VGA:"Asia/Calcutta", CJB:"Asia/Calcutta", TRZ:"Asia/Calcutta",
+  // -- Africa - final batch --
+  JOS:"Africa/Lagos", YOL:"Africa/Lagos",
+  // -- Africa - final batch East --
+  DIR:"Africa/Addis_Ababa", AWA:"Africa/Addis_Ababa",
+  // -- South America - final batch Brazil --
+  SJP:"America/Sao_Paulo", RIA:"America/Sao_Paulo",
+  // -- South America - final batch Ecuador/Peru --
+  JUL:"America/Lima", AYP:"America/Lima",
+  // -- Oceania - final batch --
+  CFS:"Australia/Sydney", PQQ:"Australia/Sydney",
+  // -- US - tail batch --
+  SBY:"America/New_York", ESN:"America/New_York", DOV:"America/New_York",
+  // -- US - tail batch Central --
+  STC:"America/Chicago", BJI:"America/Chicago",
+  // -- Canada - tail batch --
+  YAG:"America/Toronto", YER:"America/Toronto", YGL:"America/Toronto",
+  // -- Europe - tail batch UK/Ireland --
+  CAX:"Europe/London", BRR:"Europe/London", TRE:"Europe/London",
+  // -- Europe - tail batch Netherlands/Belgium --
+  GRQ:"Europe/Amsterdam", MST:"Europe/Amsterdam",
+  // -- Europe - tail batch Poland/Czechia --
+  WMI:"Europe/Warsaw",
+  // -- Asia - tail batch China --
+  DSN:"Asia/Shanghai", ERL:"Asia/Shanghai",
+  // -- Asia - tail batch SE Asia --
+  TJQ:"Asia/Jakarta", PGK:"Asia/Jakarta",
+  // -- Africa - tail batch --
+  KIM:"Africa/Johannesburg", UTT:"Africa/Johannesburg",
+  // -- South America - tail batch --
+  MGF:"America/Sao_Paulo", PFB:"America/Sao_Paulo",
+  // -- Middle East - tail batch --
+  YNB:"Asia/Riyadh", TUU:"Asia/Riyadh",
+};
+
+const overrideTz = {}; // in-memory manual overrides for the session
+
+function normCode(v){ return (v||"").trim().toUpperCase(); }
+
+function getTz(code){
+  if(overrideTz[code]) return overrideTz[code];
+  return AIRPORT_TZ[code] || null;
+}
+
+function fmtLocal(date, tz){
+  try{
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, month:'short', day:'numeric',
+      hour:'2-digit', minute:'2-digit', hour12:true
+    });
+    return fmt.format(date);
+  }catch(e){ return null; }
+}
+function fmtUTC(date){
+  const p = n => String(n).padStart(2,'0');
+  const mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${mons[date.getUTCMonth()]} ${date.getUTCDate()} ${p(date.getUTCHours())}:${p(date.getUTCMinutes())}Z`;
+}
+// Compact versions used only in the flight results tables, to keep row
+// height down: "8/26 10:30a" for local, "8/26 1430z" for UTC (zulu-style,
+// no colon, matching how you'd actually write it on a flight plan).
+function fmtLocalCompact(date, tz){
+  try{
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true
+    }).formatToParts(date);
+    const map = {};
+    parts.forEach(p=>{ map[p.type] = p.value; });
+    const ampm = (map.dayPeriod || '').charAt(0).toLowerCase();
+    return `${map.month}/${map.day} ${map.hour}:${map.minute}${ampm}`;
+  }catch(e){ return null; }
+}
+function fmtUTCCompact(date){
+  const p = n => String(n).padStart(2,'0');
+  return `${date.getUTCMonth()+1}/${date.getUTCDate()} ${p(date.getUTCHours())}${p(date.getUTCMinutes())}z`;
+}
+function tzAbbrev(tz, date){
+  try{
+    const parts = new Intl.DateTimeFormat('en-US', {timeZone:tz, timeZoneName:'short'}).formatToParts(date);
+    const tzp = parts.find(p=>p.type==='timeZoneName');
+    return tzp ? tzp.value : tz;
+  }catch(e){ return tz; }
+}
+
+// "August 27 at 9:30 PM local in LUX" — the quick-glance deadline phrasing
+// used in the window-open banner.
+function fmtArrivalDeadline(date, tz, code){
+  if(!tz) return null;
+  try{
+    const dateStr = new Intl.DateTimeFormat('en-US', { timeZone: tz, month:'long', day:'numeric' }).format(date);
+    const timeStr = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour:'numeric', minute:'2-digit', hour12:true }).format(date);
+    return `${dateStr} at ${timeStr} local in ${code}`;
+  }catch(e){ return null; }
+}
+
+// ---------------------------------------------------------------
+// Init default date/time fields to current UTC
+// ---------------------------------------------------------------
+function pad(n){ return String(n).padStart(2,'0'); }
+function setNow(){
+  const now = new Date();
+  const d = `${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-${pad(now.getUTCDate())}`;
+  const t = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;
+  document.getElementById('asDate').value = d;
+  document.getElementById('asTime').value = t;
+  const mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('asOfDisplay').textContent =
+    `${mons[now.getUTCMonth()]} ${now.getUTCDate()}, ${now.getUTCFullYear()} ${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}Z`;
+}
+setNow();
+
+// So the OT trip fields are never sitting empty — prepopulate to 18 hours
+// from right now (UTC), still fully editable. Tracks manual edits the same
+// way the Flight Date box does, so pressing "Now" refreshes this default
+// without clobbering a trip time you've actually typed in.
+let otUserEdited = false;
+function setOtDefault18h(force){
+  if(otUserEdited && !force) return;
+  const future = new Date(Date.now() + 18*3600*1000);
+  document.getElementById('otDay').value = String(future.getUTCDate());
+  document.getElementById('otTimeHHMM').value = pad(future.getUTCHours()) + pad(future.getUTCMinutes());
+}
+setOtDefault18h(true);
+
+// Tracks whether the person has actually typed into the Flight Date box
+// themselves, as opposed to it holding an auto-filled value (our own
+// default, or one pulled from a pasted "departing YYYY-MM-DD"). Only a
+// genuine keystroke should stop anything else from updating it.
+let pasteDayUserEdited = false;
+
+// Defaults the Flight Date box to today's calendar date at the departure
+// airport if it's currently 6pm local-at-origin or earlier, otherwise
+// tomorrow's — a reasonable guess for which day you're actually about to
+// search, without you having to type it in every time.
+function setPasteDayDefault(){
+  if(pasteDayUserEdited) return;
+  const gwCode = normCode(document.getElementById('gwAirport').value) || 'DTW';
+  const gwTz = getTz(gwCode) || 'UTC';
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: gwTz, year:'numeric', month:'numeric', day:'numeric', hour:'numeric', minute:'numeric', hour12:false
+  }).formatToParts(now);
+  const map = {};
+  parts.forEach(p=>{ if(p.type!=='literal') map[p.type] = parseInt(p.value,10); });
+  let hour = map.hour; if(hour===24) hour = 0;
+  const minute = map.minute;
+  let day = map.day;
+  const isAfter6pm = hour > 18 || (hour === 18 && minute > 0);
+  if(isAfter6pm){
+    // Roll to the next calendar day at the origin, letting Date's UTC
+    // arithmetic handle month/year overflow correctly.
+    day = new Date(Date.UTC(map.year, map.month-1, map.day+1)).getUTCDate();
+  }
+  document.getElementById('pasteDay').value = String(day);
+}
+setPasteDayDefault();
+
+// "Now" refreshes the search-time reference AND re-runs both prepopulation
+// defaults (OT trip time, Flight Date) — each respects its own "don't
+// clobber a manual edit" guard, so this only fills in what you haven't
+// already typed yourself.
+document.getElementById('nowBtn').addEventListener('click', ()=>{
+  setNow();
+  setOtDefault18h(false);
+  setPasteDayDefault();
+  computeWindow();
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  document.getElementById('gwAirport').value = 'DTW';
+  document.getElementById('bufDepart').value = 3;
+  document.getElementById('bufArrive').value = 3;
+  setNow();
+  otUserEdited = false;
+  setOtDefault18h(true);
+  pasteDayUserEdited = false;
+  setPasteDayDefault();
+  computeWindow();
+});
+
+// ---------------------------------------------------------------
+// Airport override handling
+// ---------------------------------------------------------------
+function wireAirportOverride(inputId, hintId, boxId, msgId, tzInputId){
+  const input = document.getElementById(inputId);
+  const hint = document.getElementById(hintId);
+  const box = document.getElementById(boxId);
+  const msg = document.getElementById(msgId);
+  const tzInput = document.getElementById(tzInputId);
+
+  function refresh(){
+    const code = normCode(input.value);
+    input.value = code;
+    if(!code || code.length < 3){ hint.textContent=''; box.classList.remove('show'); return; }
+    const tz = getTz(code);
+    if(tz){
+      hint.textContent = `Timezone: ${tz}`;
+      box.classList.remove('show');
+    } else {
+      hint.textContent = '';
+      msg.textContent = `"${code}" isn't in the built-in airport list. Enter its IANA timezone below to enable local-time conversion (flight search still works without it).`;
+      box.classList.add('show');
+    }
+  }
+  input.addEventListener('input', ()=>{ refresh(); computeWindow(); });
+  tzInput.addEventListener('input', ()=>{
+    const code = normCode(input.value);
+    const val = tzInput.value.trim();
+    if(code && val){ overrideTz[code] = val; } else if(code){ delete overrideTz[code]; }
+    refresh(); computeWindow();
+  });
+  refresh();
+}
+wireAirportOverride('gwAirport','gwHint','gwOverrideBox','gwOverrideMsg','gwOverrideTz');
+wireAirportOverride('otAirport','otHint','otOverrideBox','otOverrideMsg','otOverrideTz');
+
+// ---------------------------------------------------------------
+// Quick fill from a pasted OT email line, e.g.:
+//   "5Y734  SCL  MIA  Wed26Aug  0001z  0836z"
+// Pulls the first bare 3-letter airport code (the OT trip's origin — the
+// flight number like "5Y734" never matches since it has digits), the day
+// number out of a "Wed26Aug"-style date token, and the first 4-digit zulu
+// time, then drops them straight into the OT trip fields.
+// ---------------------------------------------------------------
+function parseOtEmailLine(text){
+  const tokens = text.trim().split(/[\t\s]+/).filter(Boolean);
+  let originCode = null, dayNum = null, hhmm = null;
+  for(const tok of tokens){
+    // Require uppercase specifically — real OT emails write codes in caps
+    // (as in "SCL", "MIA"), and this keeps ordinary lowercase words in any
+    // stray pasted text from being mistaken for an airport code.
+    if(!originCode && /^[A-Z]{3}$/.test(tok)){ originCode = tok; }
+  }
+  for(const tok of tokens){
+    const m = tok.match(/^[A-Za-z]{3}(\d{1,2})[A-Za-z]{3}$/);
+    if(m){ dayNum = m[1]; break; }
+  }
+  for(const tok of tokens){
+    const m = tok.match(/^(\d{4})[Zz]$/);
+    if(m){ hhmm = m[1]; break; }
+  }
+  return { originCode, dayNum, hhmm };
+}
+
+// Sets a field's value and fires a synthetic input event so every listener
+// already wired to that field (digit stripping, resolution, computeWindow,
+// the Google Flights link, etc.) reacts exactly like it would to real typing.
+function setFieldAndFireInput(id, value){
+  const el = document.getElementById(id);
+  el.value = value;
+  el.dispatchEvent(new Event('input', {bubbles:true}));
+}
+
+document.getElementById('otEmailPaste').addEventListener('input', (e)=>{
+  const text = e.target.value;
+  const statusEl = document.getElementById('otEmailPasteStatus');
+  if(!text.trim()){ statusEl.textContent = ''; return; }
+
+  const { originCode, dayNum, hhmm } = parseOtEmailLine(text);
+  const found = [];
+  if(originCode){ setFieldAndFireInput('otAirport', originCode); found.push(`origin ${originCode}`); }
+  if(dayNum){ setFieldAndFireInput('otDay', dayNum); found.push(`day ${dayNum}`); }
+  if(hhmm){ setFieldAndFireInput('otTimeHHMM', hhmm); found.push(`${hhmm}z`); }
+
+  if(found.length){
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = `✓ Filled: ${found.join(', ')}`;
+  } else {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = "Couldn't find an airport code, date, or zulu time in that.";
+  }
+});
+
+// ---------------------------------------------------------------
+// Window computation
+// ---------------------------------------------------------------
+let lastWindow = null; // {earliestDeparture, latestArrival, valid}
+
+function readUTCDate(dateId, timeId){
+  const d = document.getElementById(dateId).value;
+  const t = document.getElementById(timeId).value;
+  if(!d || !t) return null;
+  const dt = new Date(`${d}T${t}:00Z`);
+  if(isNaN(dt.getTime())) return null;
+  return dt;
+}
+
+function fmtUTCDateLong(date){
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const p = n => String(n).padStart(2,'0');
+  return `${days[date.getUTCDay()]}, ${mons[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()} · ${p(date.getUTCHours())}${p(date.getUTCMinutes())}Z`;
+}
+
+// OT trips only depart within the next ~7 days, so a bare day-of-month
+// unambiguously resolves to the next occurrence of that date on or after
+// the "as of" search date — rolling into next month if needed.
+function resolveOtDateTime(){
+  const hint = document.getElementById('otResolvedHint');
+  const dayRaw = document.getElementById('otDay').value.trim();
+  const timeRaw = document.getElementById('otTimeHHMM').value.trim();
+
+  if(!dayRaw || !timeRaw){ hint.textContent=''; return null; }
+
+  const day = parseInt(dayRaw, 10);
+  if(isNaN(day) || day < 1 || day > 31){
+    hint.textContent = 'Enter a valid day of month (1–31).';
+    hint.style.color = 'var(--red)';
+    return null;
+  }
+  if(!/^\d{4}$/.test(timeRaw)){
+    hint.textContent = 'Enter UTC time as 4 digits, e.g. 1429.';
+    hint.style.color = 'var(--red)';
+    return null;
+  }
+  const hh = parseInt(timeRaw.slice(0,2), 10);
+  const mm = parseInt(timeRaw.slice(2,4), 10);
+  if(hh > 23 || mm > 59){
+    hint.textContent = 'Enter a valid 24-hour UTC time (0000–2359).';
+    hint.style.color = 'var(--red)';
+    return null;
+  }
+
+  const asOf = readUTCDate('asDate','asTime') || new Date();
+  const refY = asOf.getUTCFullYear();
+  const refM = asOf.getUTCMonth();
+  const refD = asOf.getUTCDate();
+
+  let candidate = new Date(Date.UTC(refY, refM, day, hh, mm, 0));
+  const candidateDateOnly = Date.UTC(candidate.getUTCFullYear(), candidate.getUTCMonth(), candidate.getUTCDate());
+  const refDateOnly = Date.UTC(refY, refM, refD);
+  if(candidateDateOnly < refDateOnly){
+    candidate = new Date(Date.UTC(refY, refM + 1, day, hh, mm, 0));
+  }
+
+  hint.style.color = 'var(--text-faint)';
+  hint.textContent = `→ ${fmtUTCDateLong(candidate)}`;
+  return candidate;
+}
+
+function computeWindow(){
+  const area = document.getElementById('windowArea');
+  const gwCode = normCode(document.getElementById('gwAirport').value);
+  const otCode = normCode(document.getElementById('otAirport').value);
+  const otDT = resolveOtDateTime();
+  const asDT = readUTCDate('asDate','asTime');
+  const bufDepart = parseFloat(document.getElementById('bufDepart').value) || 0;
+  const bufArrive = parseFloat(document.getElementById('bufArrive').value) || 0;
+
+  if(!otCode || !otDT || !asDT){
+    area.innerHTML = '<div class="placeholder">Enter the OT trip origin airport and scheduled UTC departure above to compute your window.</div>';
+    lastWindow = null;
+    return;
+  }
+
+  const earliestDeparture = new Date(asDT.getTime() + bufDepart*3600*1000);
+  const latestArrival = new Date(otDT.getTime() - bufArrive*3600*1000);
+  const valid = earliestDeparture.getTime() <= latestArrival.getTime();
+
+  const gwTz = getTz(gwCode);
+  const otTz = getTz(otCode);
+
+  const gwLocal = gwTz ? fmtLocal(earliestDeparture, gwTz) : null;
+  const otLocalArrive = otTz ? fmtLocal(latestArrival, otTz) : null;
+  const otLocalDepart = otTz ? fmtLocal(otDT, otTz) : null;
+
+  let html = '<div class="readout">';
+  html += `<div class="rocard">
+      <div class="loc">${gwCode || '—'} · Departure</div>
+      <div class="tline">
+        <div class="tlabel">Earliest allowable commuter departure</div>
+        <div class="tval">${gwLocal ? gwLocal : fmtUTC(earliestDeparture)}</div>
+        <div class="tsub">${gwLocal ? fmtUTC(earliestDeparture) + ' · ' + tzAbbrev(gwTz, earliestDeparture) : 'add timezone above for local time'}</div>
+      </div>
+    </div>`;
+  html += `<div class="divider"><span class="arrow">→</span><span>${valid ? Math.round(((latestArrival-earliestDeparture)/3600000)*10)/10 + 'h window' : 'no window'}</span></div>`;
+  html += `<div class="rocard">
+      <div class="loc">${otCode} · OT Trip Origin</div>
+      <div class="tline">
+        <div class="tlabel">Latest allowable arrival</div>
+        <div class="tval">${otLocalArrive ? otLocalArrive : fmtUTC(latestArrival)}</div>
+        <div class="tsub">${otLocalArrive ? fmtUTC(latestArrival) + ' · ' + tzAbbrev(otTz, latestArrival) : 'add timezone above for local time'}</div>
+      </div>
+      <div class="tline">
+        <div class="tlabel">OT trip scheduled departure (local)</div>
+        <div class="tval" style="font-size:14px; color:var(--text-dim);">${otLocalDepart ? otLocalDepart : fmtUTC(otDT)}</div>
+        <div class="tsub">${fmtUTC(otDT)}</div>
+      </div>
+    </div>`;
+  html += '</div>';
+
+  if(valid){
+    const hrs = Math.floor((latestArrival-earliestDeparture)/3600000);
+    const mins = Math.round(((latestArrival-earliestDeparture)%3600000)/60000);
+    const deadline = fmtArrivalDeadline(latestArrival, otTz, otCode);
+    const deadlineSentence = deadline
+      ? `You need to arrive by ${deadline}.`
+      : `You need to arrive by ${fmtUTC(latestArrival)} (add a timezone override above for ${otCode} to see this in local time).`;
+    html += `<div class="verdict-band go"><div class="lamp"></div><div class="vtext"><strong>Window is ${hrs}h ${mins}m</strong><span>${deadlineSentence}</span></div></div>`;
+  } else {
+    const shortHrs = Math.floor(Math.abs(latestArrival-earliestDeparture)/3600000);
+    const shortMins = Math.round((Math.abs(latestArrival-earliestDeparture)%3600000)/60000);
+    html += `<div class="verdict-band nogo"><div class="lamp"></div><div class="vtext"><strong>No window — not feasible regardless of flight options</strong><span>Your earliest allowable departure is ${shortHrs}h ${shortMins}m after the latest allowable arrival. No commuter flight can satisfy both buffers.</span></div></div>`;
+  }
+
+  area.innerHTML = html;
+  lastWindow = { earliestDeparture, latestArrival, valid, gwCode, otCode };
+  updateGflightsBtn();
+}
+
+['gwAirport','otAirport','otDay','otTimeHHMM','asDate','asTime','bufDepart','bufArrive'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', computeWindow);
+});
+['otDay','otTimeHHMM'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', ()=>{ el.value = el.value.replace(/\D/g,''); otUserEdited = true; });
+});
+['bufDepart','bufArrive'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', ()=>{
+    // allow digits and a single decimal point (e.g. "2.5")
+    let v = el.value.replace(/[^\d.]/g,'');
+    const firstDot = v.indexOf('.');
+    if(firstDot !== -1){ v = v.slice(0, firstDot+1) + v.slice(firstDot+1).replace(/\./g,''); }
+    el.value = v;
+  });
+});
+computeWindow();
+
+// ---------------------------------------------------------------
+// Help modal
+// ---------------------------------------------------------------
+const helpOverlay = document.getElementById('helpOverlay');
+document.getElementById('helpBtn').addEventListener('click', ()=>{ helpOverlay.classList.add('show'); });
+document.getElementById('helpCloseBtn').addEventListener('click', ()=>{ helpOverlay.classList.remove('show'); });
+helpOverlay.addEventListener('click', (e)=>{ if(e.target === helpOverlay) helpOverlay.classList.remove('show'); });
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') helpOverlay.classList.remove('show'); });
+
+// ---------------------------------------------------------------
+// Google Flights deep link — pre-fills the route and date so you
+// land straight on results instead of typing it all in again.
+// ---------------------------------------------------------------
+let currentGFlightsUrl = null;
+
+function localDateStrInTz(date, tz){
+  try{
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
+  }catch(e){ return null; }
+}
+
+function updateGflightsBtn(){
+  const btn = document.getElementById('gflightsBtn');
+  const hint = document.getElementById('gflightsHint');
+  const urlField = document.getElementById('gflightsUrlField');
+  const copyStatus = document.getElementById('gflightsCopyStatus');
+  if(!lastWindow || !lastWindow.valid){
+    btn.disabled = true;
+    btn.textContent = 'Enter trip details above to open Google Flights';
+    hint.textContent = 'Opens Business Class results in Google Flights.';
+    currentGFlightsUrl = null;
+    urlField.style.display = 'none';
+    urlField.value = '';
+    copyStatus.textContent = '';
+    return;
+  }
+  const { gwCode, otCode, earliestDeparture } = lastWindow;
+
+  // Prefer whatever date is set in the "Flight Date" box below (so the button,
+  // the search, and the paste-parser all agree on one date) — only fall back
+  // to the computed earliest-departure date if that box is empty.
+  const pasteDateResolved = resolvePasteDate();
+  let dateStr, usingPasteDate;
+  if(pasteDateResolved){
+    dateStr = toISODateStr(pasteDateResolved);
+    usingPasteDate = true;
+  } else {
+    const gwTz = getTz(gwCode);
+    dateStr = (gwTz ? localDateStrInTz(earliestDeparture, gwTz) : null) || localDateStrInTz(earliestDeparture, 'UTC');
+    usingPasteDate = false;
+  }
+
+  const query = `Flights from ${gwCode} to ${otCode} on ${dateStr} one way business class`;
+  currentGFlightsUrl = `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
+  btn.disabled = false;
+  btn.textContent = `Open Google Flights: ${gwCode} → ${otCode} ↗`;
+  hint.textContent = usingPasteDate
+    ? `Opens one-way Business Class results for ${gwCode} → ${otCode} on ${dateStr} — the date set in the Flight Date box below. Change that box to search a different day.`
+    : `Opens one-way Business Class results for ${gwCode} → ${otCode} on ${dateStr}, your earliest allowable departure date. Set the Flight Date box below to search a specific day instead.`;
+
+  // Always-available manual fallback: the raw link, visible and tap-to-select,
+  // for apps that block window.open() or clipboard access entirely.
+  urlField.value = currentGFlightsUrl;
+  urlField.style.display = 'block';
+  copyStatus.textContent = '';
+}
+
+// Tries the modern Clipboard API first, falls back to the legacy
+// execCommand approach for embedded webviews that don't support it.
+async function copyToClipboard(text){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){ /* fall through */ }
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){
+    return false;
+  }
+}
+
+let gflightsStatusTimer = null;
+
+document.getElementById('gflightsBtn').addEventListener('click', ()=>{
+  if(!currentGFlightsUrl) return;
+  // Fire window.open() synchronously, first, so popup blockers still see
+  // this as a direct result of the click — the clipboard copy runs after.
+  window.open(currentGFlightsUrl, '_blank', 'noopener,noreferrer');
+
+  const copyStatus = document.getElementById('gflightsCopyStatus');
+  copyToClipboard(currentGFlightsUrl).then(copied=>{
+    copyStatus.style.color = copied ? 'var(--green)' : 'var(--text-faint)';
+    copyStatus.textContent = copied
+      ? '✓ Link copied — if it didn\'t open, paste it into Safari or any browser.'
+      : 'Couldn\'t auto-copy in this app — tap the link field above to select it, then copy manually.';
+    clearTimeout(gflightsStatusTimer);
+    gflightsStatusTimer = setTimeout(()=>{ copyStatus.textContent = ''; }, 6000);
+  });
+});
+
+// Tapping any of these fields selects all of its text immediately, so
+// overwriting a prepopulated or previously-entered value is just "tap and
+// type" — no backspacing or double-tapping to select first.
+function enableSelectAllOnTap(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const selectAll = ()=>{
+    el.select();
+    try{ el.setSelectionRange(0, 99999); }catch(e){} // iOS Safari needs this explicitly
+  };
+  el.addEventListener('focus', selectAll);
+  el.addEventListener('click', selectAll);
+}
+[
+  'gwAirport','otAirport','otDay','otTimeHHMM',
+  'bufDepart','bufArrive','pasteDay',
+  'gwOverrideTz','otOverrideTz','gflightsUrlField',
+  'pasteBox','otEmailPaste'
+].forEach(enableSelectAllOnTap);
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Formats spare time beyond your required arrival buffer (or the shortfall,
+// for flights that arrive too late) as a compact, readable string.
+function formatMargin(ms){
+  const short = ms < 0;
+  const totalMin = Math.round(Math.abs(ms)/60000);
+  const h = Math.floor(totalMin/60);
+  const m = totalMin%60;
+  const text = h === 0 ? `${m} minute${m===1?'':'s'}` : `${h}h ${m}m`;
+  return short ? `short ${text}` : text;
+}
+
+// A flight has to clear TWO independent buffers — it can't depart before
+// your earliest-allowable departure, and it can't arrive after your
+// latest-allowable arrival. The Margin column is strictly the arrival-side
+// number; whether a flight fails on the departure side gets its own
+// distinct verdict instead of being folded into that number.
+function classifyFlight(dep, arr, earliestDeparture, latestArrival){
+  const margin = latestArrival.getTime() - arr.getTime();
+  const departsTooEarly = dep.getTime() < earliestDeparture.getTime();
+  const meetsWindow = !departsTooEarly && margin >= 0;
+  let verdict;
+  if(meetsWindow) verdict = 'MAKES IT';
+  else if(departsTooEarly) verdict = 'DEPARTS TOO EARLY';
+  else verdict = 'TOO TIGHT';
+  return { margin, meetsWindow, verdict };
+}
+
+// Formats total journey time (minutes) the same way.
+function formatDuration(totalMin){
+  const h = Math.floor(totalMin/60);
+  const m = totalMin%60;
+  return h === 0 ? `${m} minute${m===1?'':'s'}` : `${h}h ${m}m`;
+}
+// Splits a raw layover line into airport code(s) and, when Google Flights
+// actually provided one, the layover duration. Handles the shapes seen
+// across desktop, iPad/Mac, and mobile Safari copies:
+//   "1 hr 30 min IST"  -> one stop, duration + code
+//   "JFK, MAD"         -> two or more stops, codes only, no duration given
+//   "BOS"              -> mobile single-stop format, code only
+//   "Change of airport"-> no code available at all
+function parseLayoverField(raw){
+  if(!raw) return { codes: [], duration: null, raw: null };
+  const cleaned = raw.trim();
+  if(/^[A-Z]{3}(\s*,\s*[A-Z]{3})+$/i.test(cleaned)){
+    return { codes: cleaned.split(',').map(s=>s.trim().toUpperCase()), duration: null, raw: null };
+  }
+  const m = cleaned.match(/^(\d+\s*hr(?:\s*\d+\s*min)?|\d+\s*min)\s+([A-Z]{3})$/i);
+  if(m){
+    return { codes: [m[2].toUpperCase()], duration: m[1].trim(), raw: null };
+  }
+  if(/^[A-Z]{3}$/i.test(cleaned)){
+    return { codes: [cleaned.toUpperCase()], duration: null, raw: null };
+  }
+  return { codes: [], duration: null, raw: cleaned };
+}
+
+// Renders a Layover table cell: airport code(s) on top, the layover
+// duration underneath when Google Flights actually gave us one.
+function renderLayoverCell(raw){
+  const info = parseLayoverField(raw);
+  if(info.raw) return escapeHtml(info.raw);
+  if(info.codes.length === 0) return '—';
+  const codesLine = escapeHtml(info.codes.join(', '));
+  if(info.duration){
+    return `${codesLine}<br><span style="color:var(--text-faint);font-size:11px;">${escapeHtml(info.duration)}</span>`;
+  }
+  return codesLine;
+}
+
+// =================================================================
+// Google Flights paste parser
+// =================================================================
+function isTimeLine(s){ return /^\d{1,2}:\d{2}\s?(AM|PM)(\+\d+)?$/i.test(s); }
+function isDashLine(s){ return /^[–—-]$/.test(s); }
+function isRouteLine(s){ return /^[A-Za-z]{3}[–—-][A-Za-z]{3}$/.test(s); }
+function isStopsLine(s){ return /^(nonstop|\d+\s*stops?)$/i.test(s); }
+function isPriceLine(s){ return /^\$[\d,]+(\.\d+)?$/.test(s); }
+function isDurationLine(s){ return /^\d+\s*hr(\s*\d+\s*min)?$|^\d+\s*min$/i.test(s); }
+// Mobile Safari's copy puts the origin/destination codes on their own bare
+// lines instead of combined into an "XXX–YYY" route line.
+function isAirportCodeLine(s){ return /^[A-Za-z]{3}$/.test(s); }
+// Mobile Safari also folds the layover airport(s) straight into the stops
+// line itself: "Nonstop", "1 stop in BOS", "2 stops in ORD, LHR".
+function parseStopsMobile(s){
+  if(/^nonstop$/i.test(s)) return { count: 0, layovers: [] };
+  const m = s.match(/^(\d+)\s*stops?(?:\s+in\s+(.+))?$/i);
+  if(!m) return null;
+  return {
+    count: parseInt(m[1],10),
+    layovers: m[2] ? m[2].split(',').map(x=>x.trim().toUpperCase()) : []
+  };
+}
+
+function parseStopsCount(s){
+  if(/^nonstop$/i.test(s)) return 0;
+  const m = s.match(/^(\d+)\s*stops?$/i);
+  return m ? parseInt(m[1],10) : 0;
+}
+function parseDurationMinutes(s){
+  const hm = s.match(/(\d+)\s*hr/i);
+  const mm = s.match(/(\d+)\s*min/i);
+  return (hm?parseInt(hm[1],10)*60:0) + (mm?parseInt(mm[1],10):0);
+}
+function parseClock12(s){
+  const m = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if(!m) return null;
+  let hh = parseInt(m[1],10);
+  const mm = parseInt(m[2],10);
+  const ap = m[3].toUpperCase();
+  if(ap==='AM'){ if(hh===12) hh=0; } else { if(hh!==12) hh+=12; }
+  return {hh, mm};
+}
+// Convert a local wall-clock time in a given IANA zone to the correct UTC instant,
+// accounting for that zone's DST offset on that specific date.
+function getTzOffsetMinutes(date, tz){
+  const dtf = new Intl.DateTimeFormat('en-US', {timeZone:tz, hour12:false, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const parts = dtf.formatToParts(date);
+  const map={};
+  parts.forEach(p=>{ if(p.type!=='literal') map[p.type]=parseInt(p.value,10); });
+  let hour = map.hour; if(hour===24) hour=0;
+  const asUTC = Date.UTC(map.year, map.month-1, map.day, hour, map.minute, map.second);
+  return Math.round((asUTC - date.getTime())/60000);
+}
+function zonedTimeToUTC(y,m,d,hh,mm,tz){
+  const guessUTC = Date.UTC(y, m-1, d, hh, mm, 0);
+  let offset = getTzOffsetMinutes(new Date(guessUTC), tz);
+  let utcMillis = guessUTC - offset*60000;
+  let offset2 = getTzOffsetMinutes(new Date(utcMillis), tz);
+  if(offset2 !== offset){ utcMillis = guessUTC - offset2*60000; }
+  return new Date(utcMillis);
+}
+
+// =================================================================
+// Google Flights DETAIL VIEW parser — a single expanded flight (the one
+// you've decided to book), not a list. Produces a ready-to-send booking
+// request instead of a feasibility table. Detected by the presence of
+// "Travel time:", a phrase unique to this view — the list view never
+// uses it.
+// =================================================================
+function isDetailViewPaste(text){
+  return /Travel time:/i.test(text);
+}
+
+// "12:40 PM" -> "12:40p" — same compact spirit as the results tables,
+// just built straight from the pasted text rather than a Date object,
+// since the detail view's times are already local and don't need
+// timezone math.
+function compactTimeFromText(raw){
+  const m = raw.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+  if(!m) return raw;
+  return `${parseInt(m[1],10)}:${m[2]}${m[3].toLowerCase().charAt(0)}`;
+}
+
+// A line is only a real departure/arrival line if it's a clock time
+// immediately followed eventually by "(CODE)" — and never a layover line,
+// even though a layover's "(CODE)" could otherwise look similar.
+function isDetailTimeAirportLine(s){
+  if(/layover/i.test(s)) return false;
+  return /^(\d{1,2}:\d{2}\s?(?:AM|PM))(\+\d+)?.*\(([A-Za-z]{3})\)\s*$/i.test(s);
+}
+
+// Desktop/iPad/Mac shape: time and airport concatenated onto one line
+// ("12:40 PMDetroit... (DTW)"). Walks leg by leg: departure line, optional
+// "Travel time:" line, arrival line, then the concatenated
+// "Airline+Cabin+Aircraft+FlightNo" line (only the trailing flight number
+// is pulled out of it), skipping amenity bullets and the layover line
+// before the pattern repeats for the next leg.
+function parseFlightDetailViewDesktop(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const timeAirportRe = /^(\d{1,2}:\d{2}\s?(?:AM|PM))(\+\d+)?.*\(([A-Za-z]{3})\)\s*$/i;
+  const flightNumRe = /([A-Z0-9]{2})\s?(\d{1,4})\s*$/i;
+  const legs = [];
+  let i = 0;
+  while(i < lines.length){
+    const depMatch = isDetailTimeAirportLine(lines[i]) ? lines[i].match(timeAirportRe) : null;
+    if(!depMatch){ i++; continue; }
+    const depTime = depMatch[1];
+    const depCode = depMatch[3].toUpperCase();
+    let j = i+1;
+    if(j<lines.length && /^Travel time:/i.test(lines[j])) j++;
+    if(j>=lines.length) break;
+    const arrMatch = isDetailTimeAirportLine(lines[j]) ? lines[j].match(timeAirportRe) : null;
+    if(!arrMatch){ i++; continue; }
+    const arrTime = arrMatch[1];
+    const arrDayOffset = arrMatch[2] ? parseInt(arrMatch[2].slice(1), 10) : 0;
+    const arrCode = arrMatch[3].toUpperCase();
+    j++;
+    let flightNum = null;
+    if(j<lines.length){
+      const fm = lines[j].match(flightNumRe);
+      if(fm){ flightNum = `${fm[1].toUpperCase()} ${fm[2]}`; j++; }
+    }
+    if(flightNum) legs.push({ depTime, depCode, arrTime, arrDayOffset, arrCode, flightNum });
+    while(j<lines.length && !isDetailTimeAirportLine(lines[j])) j++;
+    i = j;
+  }
+  return legs;
+}
+
+// Mobile Safari shape: every field gets its own line instead of being
+// concatenated — time alone, then airport name+code alone, then airline
+// alone, then flight number alone, no bullet markers on the amenity list
+// at all. The layover block is also split across several lines: a
+// "X hr layover" line, then the city, then "(CODE)" on its own line, then
+// an optional "Long layover" line for extended ones.
+function isBareTimeLine(s){
+  return /^\d{1,2}:\d{2}\s?(?:AM|PM)(\+\d+)?$/i.test(s);
+}
+function isBareAirportLine(s){
+  return /\(([A-Za-z]{3})\)\s*$/.test(s) && !/layover/i.test(s);
+}
+function extractTrailingAirportCode(s){
+  const m = s.match(/\(([A-Za-z]{3})\)\s*$/);
+  return m ? m[1].toUpperCase() : null;
+}
+function isBareFlightNumLine(s){
+  return /^[A-Z0-9]{2}\s?\d{1,4}$/i.test(s);
+}
+function isLayoverDurationLine(s){
+  return /^(\d+\s*hr(?:\s*\d+\s*min)?|\d+\s*min)\s*layover/i.test(s);
+}
+function parseTimeWithOffset(s){
+  const m = s.match(/^(\d{1,2}:\d{2}\s?(?:AM|PM))(\+(\d+))?$/i);
+  if(!m) return null;
+  return { time: m[1], dayOffset: m[3] ? parseInt(m[3],10) : 0 };
+}
+function parseFlightDetailViewMobile(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const legs = [];
+  let i = 0;
+  while(i < lines.length){
+    if(isBareTimeLine(lines[i]) && i+1<lines.length && isBareAirportLine(lines[i+1])){
+      const dep = parseTimeWithOffset(lines[i]);
+      const depCode = extractTrailingAirportCode(lines[i+1]);
+      let j = i+2;
+      if(j<lines.length && /^Travel time:/i.test(lines[j])) j++;
+      if(j+1<lines.length && isBareTimeLine(lines[j]) && isBareAirportLine(lines[j+1])){
+        const arr = parseTimeWithOffset(lines[j]);
+        const arrCode = extractTrailingAirportCode(lines[j+1]);
+        j += 2;
+        let flightNum = null;
+        if(j<lines.length) j++; // airline name line — not needed for output
+        if(j<lines.length && isBareFlightNumLine(lines[j])){ flightNum = lines[j].toUpperCase().replace(/\s+/,' '); j++; }
+        if(flightNum){
+          legs.push({ depTime: dep.time, depCode, arrTime: arr.time, arrDayOffset: arr.dayOffset, arrCode, flightNum });
+        }
+        // Skip cabin/aircraft/amenities/layover-block until the next leg's
+        // departure (bare time + bare airport) or end of text.
+        while(j < lines.length){
+          if(isBareTimeLine(lines[j]) && j+1<lines.length && isBareAirportLine(lines[j+1])) break;
+          if(isLayoverDurationLine(lines[j])){
+            j++;
+            if(j<lines.length) j++; // city name line
+            if(j<lines.length && /^\(.*\)$/.test(lines[j])) j++; // "(CODE)" line
+            if(j<lines.length && /long layover/i.test(lines[j])) j++; // optional
+            break;
+          }
+          j++;
+        }
+        i = j;
+        continue;
+      }
+    }
+    i++;
+  }
+  return legs;
+}
+
+// Tries the desktop shape first, falls back to the mobile shape if that
+// finds nothing — the two are structurally unambiguous (desktop always
+// has time+airport on one line; mobile never does), so there's no risk of
+// one shape being mistaken for the other.
+function parseFlightDetailView(text){
+  const desktopLegs = parseFlightDetailViewDesktop(text);
+  if(desktopLegs.length > 0) return desktopLegs;
+  return parseFlightDetailViewMobile(text);
+}
+
+// Pulls the itinerary's overall departure date from whichever header shape
+// Google Flights used: desktop glues it right onto the word "Departure"
+// ("DepartureThu, Aug 27"), mobile Safari puts it on its own bare line
+// after a separate "Departing flight" label ("Sat, Aug 29"). Deliberately
+// month/day only, no year — matches the plain "M/D" style used everywhere
+// else in the tool, and this tool only ever deals with near-term trips.
+function extractDetailViewDepartureDate(text){
+  const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  let m = text.match(/Departure\w{3},?\s*([A-Za-z]{3})\s+(\d{1,2})/i);
+  if(m){
+    const mon = months[m[1].toLowerCase().slice(0,3)];
+    if(mon) return { month: mon, day: parseInt(m[2], 10) };
+  }
+  m = text.match(/\b[A-Za-z]{3},\s*([A-Za-z]{3})\s+(\d{1,2})\b/);
+  if(m){
+    const mon = months[m[1].toLowerCase().slice(0,3)];
+    if(mon) return { month: mon, day: parseInt(m[2], 10) };
+  }
+  return null;
+}
+// Adds N days to a bare month/day pair, using the current real year purely
+// so month-length/leap-year rollover comes out right — the year itself is
+// never shown in the output.
+function addDaysToMonthDay(monthDay, days){
+  const year = new Date().getUTCFullYear();
+  const d = new Date(Date.UTC(year, monthDay.month-1, monthDay.day));
+  d.setUTCDate(d.getUTCDate() + (days||0));
+  return { month: d.getUTCMonth()+1, day: d.getUTCDate() };
+}
+function fmtMD(monthDay){ return `${monthDay.month}/${monthDay.day}`; }
+
+function buildEmailFromLegs(legs, departureDate){
+  const parts = legs.map((leg, idx) => {
+    const timeStr = compactTimeFromText(leg.depTime);
+    // Only the first leg carries a date — the rest are implied by "connecting to".
+    if(idx === 0 && departureDate){
+      return `${leg.flightNum} ${fmtMD(departureDate)} ${timeStr} ${leg.depCode} - ${leg.arrCode}`;
+    }
+    return `${leg.flightNum} ${timeStr} ${leg.depCode} - ${leg.arrCode}`;
+  });
+  let sentence = `If possible, please book ${parts.join(' connecting to ')}`;
+
+  // Closing "arriving CODE M/D time." clause — only added when there's
+  // enough info to get the arrival date right; otherwise this degrades
+  // to exactly the previous (dateless) format rather than guessing.
+  const lastLeg = legs[legs.length-1];
+  if(departureDate && lastLeg && lastLeg.arrTime){
+    const arrDate = addDaysToMonthDay(departureDate, lastLeg.arrDayOffset || 0);
+    sentence += `, arriving ${lastLeg.arrCode} ${fmtMD(arrDate)} ${compactTimeFromText(lastLeg.arrTime)}.`;
+  }
+  return sentence;
+}
+
+// Renders the booking-request draft with a tap-to-select box and a copy
+// button, reusing the same clipboard approach as the Google Flights link.
+function renderEmailDraft(text){
+  const resultsEl = document.getElementById('pasteResultsArea');
+  resultsEl.innerHTML = `
+    <div class="field">
+      <label>Booking Request — Tap To Select, Or Copy Below</label>
+      <textarea id="emailDraftBox" readonly rows="3" style="width:100%; background:#0D1015; border:1px solid var(--border); color:var(--text); border-radius:6px; padding:10px; font-family:var(--sans); font-size:13.5px; resize:vertical;"></textarea>
+    </div>
+    <button type="button" id="copyEmailBtn" class="primary" style="margin-top:10px; width:100%;">Copy Booking Request</button>
+    <div class="hint" id="copyEmailStatus" style="margin-top:6px; min-height:14px;"></div>
+  `;
+  const box = document.getElementById('emailDraftBox');
+  box.value = text;
+  const selectAll = ()=>{ box.select(); try{ box.setSelectionRange(0,99999); }catch(e){} };
+  box.addEventListener('click', selectAll);
+  box.addEventListener('focus', selectAll);
+  document.getElementById('copyEmailBtn').addEventListener('click', ()=>{
+    copyToClipboard(text).then(copied=>{
+      const statusEl = document.getElementById('copyEmailStatus');
+      statusEl.style.color = copied ? 'var(--green)' : 'var(--text-faint)';
+      statusEl.textContent = copied
+        ? '✓ Copied — paste it into your email.'
+        : "Couldn't auto-copy in this app — tap the text above to select it, then copy manually.";
+    });
+  });
+}
+
+// Parses raw copy/pasted Google Flights results text into structured flight objects.
+// Handles two layouts, auto-detected block by block:
+//  - Desktop/iPad/Mac: DepartTime, "–", ArriveTime, Airline, Duration, "XXX–YYY"
+//    route, Stops, [layover line], CO2, emissions%, Price.
+//  - iPhone (mobile Safari): DepartTime, OriginCode, ArriveTime, DestCode, Price,
+//    Stops-with-layover-folded-in ("1 stop in BOS"), Duration, Airline, emissions%
+//    — no dash, no combined route line, no separate layover line.
+// Anything that doesn't fit either shape is skipped — promo text, price-tracker
+// blurbs, etc.
+function parseGoogleFlightsPaste(text, dateStr){
+  const [dy,dm,dd] = dateStr.split('-').map(n=>parseInt(n,10));
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const flights = [];
+  let i = 0;
+  while(i < lines.length){
+    if(isTimeLine(lines[i]) && !/\+\d+$/.test(lines[i])){
+      let j = i;
+      const depRaw = lines[j]; j++;
+
+      // ---- Desktop/iPad/Mac format: dash, then arrival time ----
+      if(j<lines.length && isDashLine(lines[j])){
+        j++;
+        if(j<lines.length && isTimeLine(lines[j])){
+          const arrRaw = lines[j]; j++;
+          const airline = lines[j] || ''; j++;
+          let duration = null;
+          if(j<lines.length && isDurationLine(lines[j])){ duration = lines[j]; j++; }
+          let route = null;
+          if(j<lines.length && isRouteLine(lines[j])){ route = lines[j]; j++; }
+          let stopsText = null, stopsCount = 0;
+          if(j<lines.length && isStopsLine(lines[j])){ stopsText = lines[j]; stopsCount = parseStopsCount(stopsText); j++; }
+          // Google Flights always uses exactly ONE line for layover info,
+          // no matter how many stops: "1 hr 30 min IST" for one stop, or
+          // "JFK, MAD" (comma-separated codes, no per-leg duration) for two
+          // or more.
+          let layoverRaw = null;
+          if(stopsCount > 0 && j<lines.length && !isTimeLine(lines[j]) && !isPriceLine(lines[j]) && !/kg\s*CO2e/i.test(lines[j])){
+            layoverRaw = lines[j]; j++;
+          }
+          if(j<lines.length && /kg\s*CO2e/i.test(lines[j])) j++;
+          if(j<lines.length && /%\s*emissions/i.test(lines[j])) j++;
+          let price = null;
+          while(j<lines.length){
+            if(isPriceLine(lines[j])){ price = lines[j]; j++; break; }
+            if(isTimeLine(lines[j]) && !/\+\d+$/.test(lines[j])) break;
+            j++;
+          }
+          if(route && duration && price){
+            const [origin, dest] = route.split(/[–—-]/).map(s=>s.trim().toUpperCase());
+            const dep = parseClock12(depRaw);
+            const durMin = parseDurationMinutes(duration);
+            flights.push({
+              depRaw, arrRaw, airline, duration, durMin, route, origin, dest,
+              stopsText: stopsText||'Nonstop', stopsCount, layoverRaw, price,
+              depHH: dep?dep.hh:null, depMM: dep?dep.mm:null
+            });
+          }
+          i = j;
+          continue;
+        }
+      }
+      // ---- Mobile Safari (iPhone) format: bare origin code, then arrival
+      // time, then bare dest code — no dash, no combined route line ----
+      else if(j<lines.length && isAirportCodeLine(lines[j])){
+        const originCode = lines[j].toUpperCase(); j++;
+        if(j<lines.length && isTimeLine(lines[j])){
+          const arrRaw = lines[j]; j++;
+          if(j<lines.length && isAirportCodeLine(lines[j])){
+            const destCode = lines[j].toUpperCase(); j++;
+            let price = null, stopsInfo = null, duration = null, airline = null;
+            while(j<lines.length){
+              const line = lines[j];
+              if(isTimeLine(line) && !/\+\d+$/.test(line)) break; // next block starts
+              if(!price && isPriceLine(line)){ price = line; j++; continue; }
+              if(!stopsInfo){ const s = parseStopsMobile(line); if(s){ stopsInfo = s; j++; continue; } }
+              if(!duration && isDurationLine(line)){ duration = line; j++; continue; }
+              if(/kg\s*CO2e/i.test(line)){ j++; continue; }
+              if(/%\s*emissions/i.test(line)){ j++; continue; }
+              if(!airline){ airline = line; j++; continue; }
+              j++; // unrecognized extra line — skip
+            }
+            if(price && stopsInfo && duration){
+              const dep = parseClock12(depRaw);
+              const durMin = parseDurationMinutes(duration);
+              flights.push({
+                depRaw, arrRaw, airline: airline||'', duration, durMin,
+                route: `${originCode}–${destCode}`, origin: originCode, dest: destCode,
+                stopsText: stopsInfo.count===0 ? 'Nonstop' : (stopsInfo.count+' stop'+(stopsInfo.count===1?'':'s')),
+                stopsCount: stopsInfo.count,
+                layoverRaw: stopsInfo.layovers.length ? stopsInfo.layovers.join(', ') : null,
+                price,
+                depHH: dep?dep.hh:null, depMM: dep?dep.mm:null
+              });
+            }
+            i = j;
+            continue;
+          }
+        }
+      }
+    }
+    i++;
+  }
+  flights.forEach(f=>{
+    if(f.depHH===null){ f.error = 'Could not parse departure time'; return; }
+    const originTz = getTz(f.origin);
+    if(!originTz){ f.error = `Unknown timezone for ${f.origin} — add it via the override field above`; return; }
+    const depUTC = zonedTimeToUTC(dy,dm,dd, f.depHH, f.depMM, originTz);
+    const arrUTC = new Date(depUTC.getTime() + f.durMin*60000);
+    f.departUTC = depUTC;
+    f.arriveUTC = arrUTC;
+  });
+  return flights;
+}
+
+// Resolves a bare day-of-month for the pasted flights, exactly like resolveOtDateTime —
+// nearest occurrence of that day on or after the "as of" reference, rolling into next
+// month (and year, at a Dec→Jan boundary) as needed. Works whether the actual date is
+// a few days out or up to roughly a month out; the mechanism doesn't need a fixed cap.
+function resolvePasteDate(){
+  const hint = document.getElementById('pasteResolvedHint');
+  const dayRaw = document.getElementById('pasteDay').value.trim();
+  if(!dayRaw){ hint.textContent=''; return null; }
+
+  const day = parseInt(dayRaw, 10);
+  if(isNaN(day) || day < 1 || day > 31){
+    hint.textContent = 'Enter a valid day of month (1–31).';
+    hint.style.color = 'var(--red)';
+    return null;
+  }
+
+  const asOf = readUTCDate('asDate','asTime') || new Date();
+  const refY = asOf.getUTCFullYear();
+  const refM = asOf.getUTCMonth();
+  const refD = asOf.getUTCDate();
+
+  let candidate = new Date(Date.UTC(refY, refM, day));
+  const candidateDateOnly = Date.UTC(candidate.getUTCFullYear(), candidate.getUTCMonth(), candidate.getUTCDate());
+  const refDateOnly = Date.UTC(refY, refM, refD);
+  if(candidateDateOnly < refDateOnly){
+    candidate = new Date(Date.UTC(refY, refM + 1, day));
+  }
+
+  hint.style.color = 'var(--text-faint)';
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  hint.textContent = `→ ${days[candidate.getUTCDay()]}, ${mons[candidate.getUTCMonth()]} ${candidate.getUTCDate()}, ${candidate.getUTCFullYear()}`;
+  return candidate;
+}
+function toISODateStr(d){
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())}`;
+}
+
+document.getElementById('pasteDay').addEventListener('input', (e)=>{
+  e.target.value = e.target.value.replace(/\D/g,'');
+  pasteDayUserEdited = true;
+  resolvePasteDate();
+  updateGflightsBtn();
+});
+
+// Auto-detect "departing YYYY-MM-DD" from the pasted text to prefill the day
+// field — this can override our own auto-filled default, but never
+// something the person actually typed themselves.
+document.getElementById('pasteBox').addEventListener('input', ()=>{
+  if(pasteDayUserEdited) return;
+  const dayEl = document.getElementById('pasteDay');
+  const m = document.getElementById('pasteBox').value.match(/departing\s+\d{4}-\d{2}-(\d{2})/i);
+  if(m){ dayEl.value = String(parseInt(m[1],10)); resolvePasteDate(); updateGflightsBtn(); }
+});
+
+function runPasteParse(){
+  const statusEl = document.getElementById('parseStatus');
+  const resultsEl = document.getElementById('pasteResultsArea');
+  const text = document.getElementById('pasteBox').value;
+
+  if(!text.trim()){
+    statusEl.innerHTML = '<div class="error-box">Paste box is empty.</div>';
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  // A single expanded flight (the one you're ready to book) gets a
+  // completely different output — no window check needed, since this
+  // isn't about feasibility, it's about drafting the booking request.
+  if(isDetailViewPaste(text)){
+    const legs = parseFlightDetailView(text);
+    if(legs.length === 0){
+      statusEl.innerHTML = '<div class="error-box">This looks like a flight detail view, but no flight legs could be found in it.</div>';
+      resultsEl.innerHTML = '';
+      return;
+    }
+    statusEl.innerHTML = `<div class="status-line">Found ${legs.length} leg${legs.length===1?'':'s'} — booking request ready below.</div>`;
+    const departureDate = extractDetailViewDepartureDate(text);
+    renderEmailDraft(buildEmailFromLegs(legs, departureDate));
+    return;
+  }
+
+  const resolvedDate = resolvePasteDate();
+
+  if(!lastWindow || !lastWindow.valid){
+    statusEl.innerHTML = '<div class="error-box">Set up a valid Feasibility Window above first — enter the OT trip details so there\'s something to check these flights against.</div>';
+    resultsEl.innerHTML = '';
+    return;
+  }
+  if(!resolvedDate){
+    statusEl.innerHTML = '<div class="error-box">Enter a valid day of month for the flight date above (we couldn\'t auto-detect it from your paste).</div>';
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  const dateStr = toISODateStr(resolvedDate);
+  const flights = parseGoogleFlightsPaste(text, dateStr);
+  if(flights.length === 0){
+    statusEl.innerHTML = '<div class="error-box">Couldn\'t find any flight entries in that paste. Make sure it includes the full result rows (times, airline, duration, route, price).</div>';
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  flights.sort((a,b)=> (a.departUTC?a.departUTC.getTime():Infinity) - (b.departUTC?b.departUTC.getTime():Infinity));
+
+  const okCount = flights.filter(f=>!f.error && f.departUTC.getTime()>=lastWindow.earliestDeparture.getTime() && f.arriveUTC.getTime()<=lastWindow.latestArrival.getTime()).length;
+  statusEl.innerHTML = `<div class="status-line">Parsed ${flights.length} flight${flights.length===1?'':'s'} — ${okCount} make${okCount===1?'s':''} the window.</div>`;
+
+  renderPasteResults(flights, lastWindow.gwCode, lastWindow.otCode, lastWindow.earliestDeparture, lastWindow.latestArrival);
+}
+document.getElementById('parseBtn').addEventListener('click', runPasteParse);
+
+// Auto-run on an actual paste (Cmd/Ctrl+V, long-press-paste, right-click
+// paste) — this listens for the browser's native "paste" event rather than
+// touching click/focus at all, so it can never interfere with select-all.
+// The paste event fires just before the browser inserts the content, so the
+// run is deferred one tick to let the textarea's value actually update
+// first. The Go button stays as a manual fallback for anywhere this event
+// doesn't fire as expected.
+document.getElementById('pasteBox').addEventListener('paste', ()=>{
+  setTimeout(runPasteParse, 0);
+});
+
+
+// Splits local date and time into separate pieces (rather than one combined
+// compact string) so they can be dropped into "{date} at {time}" phrasing.
+// Falls back to UTC (marked with a trailing "z") if the airport's timezone
+// isn't in the table — never silently mislabels a UTC time as local.
+function fmtLocalDateTimeParts(date, tz){
+  try{
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true
+    }).formatToParts(date);
+    const map = {};
+    parts.forEach(p=>{ map[p.type] = p.value; });
+    const ampm = (map.dayPeriod || '').charAt(0).toLowerCase();
+    return { dateStr: `${map.month}/${map.day}`, timeStr: `${map.hour}:${map.minute}${ampm}` };
+  }catch(e){ return null; }
+}
+function fmtUTCDateTimeParts(date){
+  const p = n => String(n).padStart(2,'0');
+  return { dateStr: `${date.getUTCMonth()+1}/${date.getUTCDate()}`, timeStr: `${p(date.getUTCHours())}${p(date.getUTCMinutes())}z` };
+}
+
+// "A" / "A and B" / "A, B, and C" — standard list phrasing for however
+// many connecting airlines there are.
+function joinWithAnd(items){
+  if(items.length === 0) return '';
+  if(items.length === 1) return items[0];
+  if(items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0,-1).join(', ')}, and ${items[items.length-1]}`;
+}
+
+// A ready-to-send booking-request sentence for this flight, for copying —
+// no HTML, since this goes straight to the clipboard.
+function buildRowSummaryText(f, dep, arr, gwTz, otTz, gwCode, otCode, margin){
+  const depParts = (gwTz && fmtLocalDateTimeParts(dep, gwTz)) || fmtUTCDateTimeParts(dep);
+  const arrParts = (otTz && fmtLocalDateTimeParts(arr, otTz)) || fmtUTCDateTimeParts(arr);
+
+  // The raw airline field is comma-separated when Google Flights lists
+  // distinct carriers ("Delta, ANA"). If it's a single concatenated blob
+  // with no comma, there's no reliable way to know where one airline's
+  // name ends and the next begins, so it's treated as one name rather
+  // than guessed apart.
+  const airlineNames = (f.airline || '').split(',').map(s=>s.trim()).filter(Boolean);
+  const firstAirline = airlineNames[0] || 'Unknown airline';
+  const restAirlines = airlineNames.slice(1);
+
+  const intro = `Please book me from ${gwCode} to ${otCode} as follows if possible: `;
+  const closing = ` If my math is right, it should be legal and contractual by ${formatMargin(margin)}. Let me know if you need the flight numbers.`;
+
+  let body;
+  if(f.stopsCount === 0 || restAirlines.length === 0){
+    body = `${firstAirline} departing ${depParts.dateStr} at ${depParts.timeStr}, arriving in ${otCode} ${arrParts.dateStr} at ${arrParts.timeStr}.`;
+  } else {
+    const layoverInfo = parseLayoverField(f.layoverRaw);
+    const firstLayoverCode = layoverInfo.codes[0] || '';
+    const connWord = restAirlines.length > 1 ? 'connections' : 'connection';
+    body = `${firstAirline} ${gwCode}${firstLayoverCode ? ' '+firstLayoverCode : ''} departing ${depParts.dateStr} at ${depParts.timeStr}, with ${connWord} on ${joinWithAnd(restAirlines)} arriving in ${otCode} ${arrParts.dateStr} at ${arrParts.timeStr}.`;
+  }
+  return intro + body + closing;
+}
+
+function renderPasteResults(flights, gwCode, otCode, earliestDeparture, latestArrival){
+  const resultsEl = document.getElementById('pasteResultsArea');
+  const gwTz = getTz(gwCode);
+  const otTz = getTz(otCode);
+
+  // Split out unparseable rows (kept at the very end) from real flights we
+  // can sort by directness, journey time, and margin.
+  const errored = flights.filter(f => f.error);
+  const good = flights.filter(f => !f.error).map(f=>{
+    const dep = f.departUTC, arr = f.arriveUTC;
+    const { margin, meetsWindow, verdict } = classifyFlight(dep, arr, earliestDeparture, latestArrival);
+    return { f, dep, arr, meetsWindow, margin, verdict };
+  });
+
+  // Sort: flights that make it come first, full stop. Within that, direct
+  // flights come before any flight with a connection. Among direct flights,
+  // smallest margin first. Among flights with connections, total journey
+  // time takes priority over stop count — a longer layover shouldn't rank
+  // above a shorter total trip just because it has fewer stops. Failing
+  // flights are sorted the same way among themselves, buried at the bottom.
+  good.sort((a,b)=>{
+    if(a.meetsWindow !== b.meetsWindow) return a.meetsWindow ? -1 : 1;
+    const aDirect = a.f.stopsCount === 0, bDirect = b.f.stopsCount === 0;
+    if(aDirect !== bDirect) return aDirect ? -1 : 1;
+    if(!aDirect && a.f.durMin !== b.f.durMin) return a.f.durMin - b.f.durMin;
+    return a.meetsWindow ? (a.margin - b.margin) : (b.margin - a.margin);
+  });
+
+  let rows = '';
+  good.forEach(({f, dep, arr, meetsWindow, margin, verdict})=>{
+    const depLocal = gwTz ? fmtLocalCompact(dep, gwTz) : null;
+    const arrLocal = otTz ? fmtLocalCompact(arr, otTz) : null;
+    const summary = buildRowSummaryText(f, dep, arr, gwTz, otTz, gwCode, otCode, margin);
+
+    rows += `<tr class="copyable${meetsWindow?'':' outside'}" data-summary="${escapeHtml(summary)}" title="Tap to copy this flight's details">
+      <td>${escapeHtml(f.airline||'—')}</td>
+      <td class="cell-time">${depLocal||fmtUTCCompact(dep)}<br><span class="utc">${fmtUTCCompact(dep)}</span></td>
+      <td class="cell-time">${arrLocal||fmtUTCCompact(arr)}<br><span class="utc">${fmtUTCCompact(arr)}</span></td>
+      <td>${escapeHtml(f.stopsText)}</td>
+      <td>${renderLayoverCell(f.layoverRaw)}</td>
+      <td>${formatDuration(f.durMin)}</td>
+      <td>${formatMargin(margin)}</td>
+      <td><span class="badge ${meetsWindow?'ok':'bad'}">${verdict}</span></td>
+    </tr>`;
+  });
+  errored.forEach(f=>{
+    rows += `<tr class="outside">
+      <td>${escapeHtml(f.airline||'—')}</td>
+      <td colspan="5" style="color:var(--red);">${escapeHtml(f.error)}</td>
+      <td>—</td>
+      <td><span class="badge bad">SKIPPED</span></td>
+    </tr>`;
+  });
+
+  resultsEl.innerHTML = `<div style="overflow-x:auto;"><table>
+    <thead><tr><th>Airline</th><th>Depart (${gwCode})</th><th>Arrive (${otCode})</th><th>Stops</th><th>Layover</th><th>Total Time</th><th>Margin</th><th>Verdict</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+  <div class="hint" id="rowCopyStatus" style="margin-top:10px; min-height:14px;">Tap a row to copy.</div>`;
+
+  document.querySelectorAll('#pasteResultsArea tr.copyable').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const summary = tr.dataset.summary;
+      const statusEl = document.getElementById('rowCopyStatus');
+      copyToClipboard(summary).then(copied=>{
+        tr.classList.add('just-copied');
+        setTimeout(()=>tr.classList.remove('just-copied'), 700);
+        statusEl.style.color = copied ? 'var(--green)' : 'var(--text-faint)';
+        statusEl.textContent = copied
+          ? `✓ Copied: ${summary}`
+          : "Couldn't auto-copy in this app — long-press the row to select and copy manually.";
+      });
+    });
+  });
+}
+</script>
+</body>
+</html>
