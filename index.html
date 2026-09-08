@@ -361,6 +361,14 @@
     border-top: 1px solid var(--border);
     padding-top: 14px;
   }
+  .version-tag{
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    opacity: 0.6;
+  }
 </style>
 </head>
 <body>
@@ -470,6 +478,7 @@
 
   <footer>
     This is a planning aid — always confirm the actual schedule with the airline. Tap the <strong style="color:var(--amber);">?</strong> at the top for how everything works.
+    <div class="version-tag" id="versionTag"></div>
   </footer>
 
 </div>
@@ -517,6 +526,17 @@
       </ul>
       <p>Parsing runs automatically the moment you paste. The <strong>Go</strong> button is a manual fallback for anywhere that auto-paste detection doesn't fire.</p>
 
+      <h3>Opening This Tool From A Link</h3>
+      <p>This page can be opened pre-filled via URL parameters — handy if something else (an automated email check, for instance) hands you a link instead of you filling fields in by hand. Add any of these to the page's URL, e.g. <code>?gw=DTW&amp;ot=ZAZ&amp;otDay=15&amp;otTime=0130</code>:</p>
+      <ul>
+        <li><code>gw</code> — departure/gateway airport code</li>
+        <li><code>ot</code> — OT trip's first-leg origin (or substitute) airport code</li>
+        <li><code>otDay</code> / <code>otTime</code> — OT trip's first-leg UTC day-of-month and time (HHMM)</li>
+        <li><code>bufDepart</code> / <code>bufArrive</code> — buffers, in hours</li>
+        <li><code>day</code> — Flight Date (local at the gateway), day-of-month</li>
+      </ul>
+      <p>All of them are optional — include only what you want pre-filled, the rest keep their normal defaults.</p>
+
       <h3>A Note On Accuracy</h3>
       <p>This is a planning aid, not a booking system — always confirm the actual commuter flight's schedule directly with the airline before committing to bid on an Open Time trip.</p>
     </div>
@@ -524,6 +544,12 @@
 </div>
 
 <script>
+// ---------------------------------------------------------------
+// VERSION — bump this by 1 on every edit. Displayed at the bottom of the page.
+// ---------------------------------------------------------------
+const APP_VERSION = 27;
+document.getElementById('versionTag').textContent = `v${APP_VERSION}`;
+
 // ---------------------------------------------------------------
 // IATA -> IANA timezone lookup (~1,440 airports worldwide)
 // ---------------------------------------------------------------
@@ -2716,6 +2742,57 @@ function renderPasteResults(flights, gwCode, otCode, earliestDeparture, latestAr
     });
   });
 }
+
+// ---------------------------------------------------------------
+// Deep-link prefill from URL query parameters
+// ---------------------------------------------------------------
+// Lets an outside link (e.g. a commute-check email) open this tool with
+// the trip already filled in. Recognized params, all optional:
+//   gw         - departure/gateway airport code
+//   ot         - OT trip's first-leg origin (or substitute) airport code
+//   otDay      - OT trip's first-leg UTC day-of-month
+//   otTime     - OT trip's first-leg UTC time, HHMM
+//   bufDepart  - departure buffer, hours
+//   bufArrive  - arrival buffer, hours
+//   day        - Flight Date (local at the gateway airport), day-of-month,
+//                for the "Open Google Flights" button/search date
+// Placed at the very end of the script, deliberately — it calls
+// computeWindow(), which can reach code defined further down (like the
+// Google Flights link's state), so everything else must already be
+// initialized before this runs.
+(function applyUrlPrefill(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if(![...params.keys()].length) return;
+
+    const gw = params.get('gw');
+    const ot = params.get('ot');
+    const otDay = params.get('otDay');
+    const otTime = params.get('otTime');
+    const bufDepart = params.get('bufDepart');
+    const bufArrive = params.get('bufArrive');
+    const flightDay = params.get('day');
+
+    if(gw){ document.getElementById('gwAirport').value = gw.toUpperCase(); }
+    if(ot){ document.getElementById('otAirport').value = ot.toUpperCase(); }
+    if(otDay){ document.getElementById('otDay').value = otDay; otUserEdited = true; }
+    if(otTime){ document.getElementById('otTimeHHMM').value = otTime; otUserEdited = true; }
+    if(bufDepart){ document.getElementById('bufDepart').value = bufDepart; }
+    if(bufArrive){ document.getElementById('bufArrive').value = bufArrive; }
+    if(flightDay){ document.getElementById('pasteDay').value = flightDay; pasteDayUserEdited = true; }
+
+    // Re-run the airport-override refresh (timezone hints, etc.) for any
+    // airport fields we just changed programmatically.
+    ['gwAirport','otAirport'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.dispatchEvent(new Event('input', {bubbles:true}));
+    });
+
+    computeWindow();
+  } catch(e) {
+    console.error('URL prefill failed', e);
+  }
+})();
 </script>
 </body>
 </html>
